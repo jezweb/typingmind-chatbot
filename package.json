@@ -1,0 +1,30 @@
+{
+  "name": "typingmind-chatbot-platform",
+  "version": "1.0.0",
+  "description": "Multi-tenant embeddable chatbot platform powered by TypingMind API",
+  "main": "worker/index.js",
+  "scripts": {
+    "dev": "wrangler dev",
+    "dev:widget": "cd widget && npm run dev",
+    "build": "npm run build:widget",
+    "build:widget": "cd widget && npm run build",
+    "deploy": "wrangler deploy",
+    "deploy:widget": "cd widget && npm run deploy",
+    "test": "jest",
+    "lint": "eslint .",
+    "setup:kv": "node scripts/setup-kv.js",
+    "config:push": "node scripts/push-config.js"
+  },
+  "keywords": ["chatbot", "typingmind", "cloudflare-workers", "widget"],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240117.0",
+    "eslint": "^8.56.0",
+    "jest": "^29.7.0",
+    "wrangler": "^3.0.0"
+  },
+  "dependencies": {
+    "itty-router": "^4.0.0"
+  }
+}
