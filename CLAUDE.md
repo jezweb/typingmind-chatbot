@@ -153,6 +153,7 @@ agent_themes (agent_id, primary_color, position, width, embed_mode, font_family,
 - `DELETE /admin/agents/:id` - Delete agent (API endpoint)
 - `POST /admin/agents` - Create agent (API endpoint)
 - `PUT /admin/agents/:id` - Update agent (API endpoint)
+- `POST /admin/agents/:id/clone` - Clone agent with all settings (API endpoint)
 
 ## Widget Development
 
@@ -261,6 +262,7 @@ TypingMindChat.init({
    - Added width control setting (default: 380px)
    - Position and width now configurable per agent
    - Added embed mode selector (popup/inline)
+   - **NEW: Clone Agent feature** - Duplicate agents with all settings
 3. **Widget Improvements**:
    - Fixed TypingMind API response parsing
    - Shows agent name in header instead of generic "Chat Support"
@@ -275,7 +277,10 @@ TypingMindChat.init({
    - Fixed template literal escaping in admin forms
    - Added missing width column to production database
    - Resolved CORS issues with proper origin handling
-5. **Latest Addition**: 
+   - **Fixed Copy Widget Code** - Now uses modern Clipboard API with fallback
+5. **Latest Additions**: 
    - Added embed_mode column to agent_themes table
    - Widget auto-detects mode based on container presence
    - Full style isolation for both modes using Shadow DOM
+   - Clone button in admin panel for easy agent duplication
+   - Improved clipboard functionality with better browser support

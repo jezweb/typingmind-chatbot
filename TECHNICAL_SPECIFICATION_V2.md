@@ -114,21 +114,24 @@ CREATE TABLE IF NOT EXISTS agent_themes (
 **Features:**
 - Secure login (password protected)
 - Agent management (CRUD operations)
+- Clone agents with all settings
 - Domain whitelist configuration
 - API key management
 - Usage analytics dashboard
 - Rate limit configuration
 - Real-time chat monitoring
+- Copy widget code with modern clipboard API
 
 **Admin Routes:**
 ```
-/admin                  - Login page
-/admin/dashboard        - Main dashboard
-/admin/agents           - Agent management
-/admin/agents/new       - Create new agent
-/admin/agents/:id       - Edit agent
-/admin/analytics        - Usage statistics
-/admin/settings         - Global settings
+/admin                     - Login page
+/admin/dashboard           - Main dashboard with agent list
+/admin/agents              - Agent management
+/admin/agents/new          - Create new agent
+/admin/agents/:id/edit     - Edit agent
+/admin/agents/:id/clone    - Clone agent (POST)
+/admin/analytics           - Usage statistics
+/admin/settings            - Global settings
 ```
 
 ### 3. Enhanced Security Architecture
@@ -517,6 +520,7 @@ const EventBus = {
 - **Debounced Input**: Prevent excessive API calls
 - **Asset Caching**: Cache widget resources in browser
 - **Minimal Bundle**: < 50KB gzipped
+- **Clipboard API**: Modern clipboard API with fallback for compatibility
 
 ## Widget Features
 
@@ -592,7 +596,9 @@ const EventBus = {
    - Implement agent configuration system ✓
    - Create admin UI for agent management ✓
    - Add domain restriction logic ✓
-   - **Develop chat widget UI components** ← Current
+   - Develop chat widget UI components ✓
+   - Add agent cloning functionality ✓
+   - Fix clipboard functionality ✓
    
 3. **Long Term:**
    - Advanced analytics dashboard
