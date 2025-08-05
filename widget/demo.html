@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TypingMind Chat Widget Demo</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    
+    .header {
+      background: white;
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-bottom: 2rem;
+    }
+    
+    h1 {
+      margin: 0 0 1rem 0;
+      color: #2c3e50;
+    }
+    
+    .subtitle {
+      color: #7f8c8d;
+      margin: 0;
+    }
+    
+    .section {
+      background: white;
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-bottom: 2rem;
+    }
+    
+    h2 {
+      margin-top: 0;
+      color: #2c3e50;
+    }
+    
+    .code-block {
+      background: #f8f9fa;
+      border: 1px solid #e9ecef;
+      border-radius: 4px;
+      padding: 1rem;
+      overflow-x: auto;
+      margin: 1rem 0;
+    }
+    
+    code {
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 14px;
+    }
+    
+    .config-options {
+      display: grid;
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+    
+    .config-option {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    
+    .config-option label {
+      flex: 0 0 150px;
+      font-weight: 500;
+    }
+    
+    .config-option input,
+    .config-option select {
+      flex: 1;
+      padding: 0.5rem;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    
+    .buttons {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    
+    button {
+      padding: 0.75rem 1.5rem;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background 0.2s;
+    }
+    
+    button:hover {
+      background: #0056b3;
+    }
+    
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .status {
+      padding: 1rem;
+      border-radius: 4px;
+      margin-top: 1rem;
+    }
+    
+    .status.success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    
+    .status.error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+    
+    .feature {
+      padding: 1rem;
+      background: #f8f9fa;
+      border-radius: 4px;
+      border-left: 4px solid #007bff;
+    }
+    
+    .feature h3 {
+      margin: 0 0 0.5rem 0;
+      color: #2c3e50;
+    }
+    
+    .feature p {
+      margin: 0;
+      color: #6c757d;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>TypingMind Chat Widget Demo</h1>
+    <p class="subtitle">Test and configure your chat widget before deploying to production</p>
+  </div>
+  
+  <div class="section">
+    <h2>Widget Configuration</h2>
+    
+    <div class="config-options">
+      <div class="config-option">
+        <label for="agentId">Agent ID:</label>
+        <input type="text" id="agentId" value="your-agent-id" placeholder="character-5b959706-af2e-401d-a6c1-f5f582c20047">
+      </div>
+      
+      <div class="config-option">
+        <label for="position">Position:</label>
+        <select id="position">
+          <option value="bottom-right">Bottom Right</option>
+          <option value="bottom-left">Bottom Left</option>
+          <option value="top-right">Top Right</option>
+          <option value="top-left">Top Left</option>
+        </select>
+      </div>
+      
+      <div class="config-option">
+        <label for="primaryColor">Primary Color:</label>
+        <input type="color" id="primaryColor" value="#007bff">
+      </div>
+      
+      <div class="config-option">
+        <label for="workerUrl">Worker URL:</label>
+        <input type="text" id="workerUrl" value="https://typingmind-chatbot.webfonts.workers.dev" placeholder="https://your-worker.workers.dev">
+      </div>
+    </div>
+    
+    <div class="buttons">
+      <button onclick="initWidget()">Initialize Widget</button>
+      <button onclick="destroyWidget()" disabled id="destroyBtn">Destroy Widget</button>
+      <button onclick="toggleWidget()" disabled id="toggleBtn">Toggle Widget</button>
+    </div>
+    
+    <div id="status"></div>
+  </div>
+  
+  <div class="section">
+    <h2>Embed Code</h2>
+    <p>Copy this code to add the chat widget to your website:</p>
+    
+    <div class="code-block">
+      <code id="embedCode">
+&lt;script src="https://typingmind-chatbot.webfonts.workers.dev/widget.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+  TypingMindChat.init({
+    agentId: 'your-agent-id',
+    position: 'bottom-right'
+  });
+&lt;/script&gt;
+      </code>
+    </div>
+  </div>
+  
+  <div class="section">
+    <h2>Features</h2>
+    
+    <div class="features">
+      <div class="feature">
+        <h3>🛡️ Shadow DOM</h3>
+        <p>Complete style isolation ensures the widget looks perfect on any website</p>
+      </div>
+      
+      <div class="feature">
+        <h3>📱 Responsive</h3>
+        <p>Optimized for mobile and desktop with touch-friendly controls</p>
+      </div>
+      
+      <div class="feature">
+        <h3>💾 Session Persistence</h3>
+        <p>Conversations are saved locally and persist between page reloads</p>
+      </div>
+      
+      <div class="feature">
+        <h3>🎨 Customizable</h3>
+        <p>Easy to match your brand with theme options and CSS variables</p>
+      </div>
+      
+      <div class="feature">
+        <h3>⚡ Performance</h3>
+        <p>Lightweight bundle with lazy loading and efficient rendering</p>
+      </div>
+      
+      <div class="feature">
+        <h3>🔒 Secure</h3>
+        <p>Domain validation and API key protection on the server side</p>
+      </div>
+    </div>
+  </div>
+  
+  <div class="section">
+    <h2>API Reference</h2>
+    
+    <h3>Initialization</h3>
+    <div class="code-block">
+      <code>
+TypingMindChat.init({
+  agentId: 'your-agent-id',        // Required
+  position: 'bottom-right',         // Optional: bottom-right, bottom-left, top-right, top-left
+  workerUrl: 'https://...',         // Optional: Your Worker URL
+  theme: {
+    primaryColor: '#007bff',        // Optional: Primary color
+    fontFamily: 'inherit',          // Optional: Font family
+    borderRadius: '8px'             // Optional: Border radius
+  },
+  onMessage: (message) => {         // Optional: Message callback
+    console.log('Received:', message);
+  },
+  onOpen: () => {                   // Optional: Open callback
+    console.log('Widget opened');
+  },
+  onClose: () => {                  // Optional: Close callback
+    console.log('Widget closed');
+  }
+});
+      </code>
+    </div>
+    
+    <h3>Methods</h3>
+    <div class="code-block">
+      <code>
+// Open the chat widget
+TypingMindChat.open('your-agent-id');
+
+// Close the chat widget
+TypingMindChat.close('your-agent-id');
+
+// Destroy the widget instance
+TypingMindChat.destroy('your-agent-id');
+      </code>
+    </div>
+  </div>
+  
+  <!-- Widget Script -->
+  <script src="dist/widget.js"></script>
+  
+  <script>
+    let currentWidget = null;
+    
+    function initWidget() {
+      const config = {
+        agentId: document.getElementById('agentId').value,
+        position: document.getElementById('position').value,
+        workerUrl: document.getElementById('workerUrl').value,
+        theme: {
+          primaryColor: document.getElementById('primaryColor').value
+        },
+        onMessage: (message) => {
+          console.log('Message received:', message);
+        },
+        onOpen: () => {
+          console.log('Widget opened');
+        },
+        onClose: () => {
+          console.log('Widget closed');
+        }
+      };
+      
+      if (!config.agentId || config.agentId === 'your-agent-id') {
+        showStatus('Please enter a valid Agent ID', 'error');
+        return;
+      }
+      
+      try {
+        currentWidget = TypingMindChat.init(config);
+        
+        document.getElementById('destroyBtn').disabled = false;
+        document.getElementById('toggleBtn').disabled = false;
+        
+        showStatus('Widget initialized successfully!', 'success');
+        updateEmbedCode(config);
+      } catch (error) {
+        showStatus('Failed to initialize widget: ' + error.message, 'error');
+      }
+    }
+    
+    function destroyWidget() {
+      if (currentWidget) {
+        const agentId = document.getElementById('agentId').value;
+        TypingMindChat.destroy(agentId);
+        currentWidget = null;
+        
+        document.getElementById('destroyBtn').disabled = true;
+        document.getElementById('toggleBtn').disabled = true;
+        
+        showStatus('Widget destroyed', 'success');
+      }
+    }
+    
+    function toggleWidget() {
+      if (currentWidget) {
+        const agentId = document.getElementById('agentId').value;
+        if (currentWidget.state.isOpen) {
+          TypingMindChat.close(agentId);
+        } else {
+          TypingMindChat.open(agentId);
+        }
+      }
+    }
+    
+    function showStatus(message, type) {
+      const status = document.getElementById('status');
+      status.className = 'status ' + type;
+      status.textContent = message;
+      
+      setTimeout(() => {
+        status.className = '';
+        status.textContent = '';
+      }, 5000);
+    }
+    
+    function updateEmbedCode(config) {
+      const embedCode = `&lt;script src="${config.workerUrl}/widget.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+  TypingMindChat.init({
+    agentId: '${config.agentId}',
+    position: '${config.position}'${config.theme.primaryColor !== '#007bff' ? `,
+    theme: {
+      primaryColor: '${config.theme.primaryColor}'
+    }` : ''}
+  });
+&lt;/script&gt;`;
+      
+      document.getElementById('embedCode').innerHTML = embedCode;
+    }
+    
+    // Update embed code when config changes
+    document.querySelectorAll('input, select').forEach(el => {
+      el.addEventListener('change', () => {
+        if (currentWidget) {
+          showStatus('Please destroy and reinitialize the widget to apply changes', 'error');
+        }
+      });
+    });
+  </script>
+</body>
+</html>

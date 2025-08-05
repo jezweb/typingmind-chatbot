@@ -13,8 +13,12 @@ This document outlines the enhanced technical architecture for creating a multi-
 └─────────────────┘     └──────────────────┘     │ │   Admin Panel   │ │
                                                   │ └─────────────────┘ │
                                                   │ ┌─────────────────┐ │
-                                                  │ │  Configuration  │ │
+                                                  │ │   D1 Database   │ │
+                                                  │ │    (Agents)     │ │
+                                                  │ └─────────────────┘ │
+                                                  │ ┌─────────────────┐ │
                                                   │ │   KV Storage    │ │
+                                                  │ │  (Rate Limits)  │ │
                                                   │ └─────────────────┘ │
                                                   └──────────┬──────────┘
                                                              │
@@ -29,46 +33,78 @@ This document outlines the enhanced technical architecture for creating a multi-
 
 ### 1. Configuration Management System
 
-**Agent Configuration Schema:**
+**Database Schema (D1):**
+```sql
+-- Agents table stores core agent information
+CREATE TABLE IF NOT EXISTS agents (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  api_key TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Domain restrictions for each agent
+CREATE TABLE IF NOT EXISTS agent_domains (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  agent_id TEXT NOT NULL,
+  domain TEXT NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (agent_id) REFERENCES agents(id) ON DELETE CASCADE
+);
+
+-- Rate limits per agent
+CREATE TABLE IF NOT EXISTS agent_rate_limits (
+  agent_id TEXT PRIMARY KEY,
+  messages_per_hour INTEGER DEFAULT 100,
+  messages_per_session INTEGER DEFAULT 30,
+  FOREIGN KEY (agent_id) REFERENCES agents(id) ON DELETE CASCADE
+);
+
+-- Feature flags per agent
+CREATE TABLE IF NOT EXISTS agent_features (
+  agent_id TEXT PRIMARY KEY,
+  image_upload BOOLEAN DEFAULT FALSE,
+  markdown BOOLEAN DEFAULT TRUE,
+  persist_session BOOLEAN DEFAULT FALSE,
+  FOREIGN KEY (agent_id) REFERENCES agents(id) ON DELETE CASCADE
+);
+
+-- Theme settings per agent
+CREATE TABLE IF NOT EXISTS agent_themes (
+  agent_id TEXT PRIMARY KEY,
+  primary_color TEXT DEFAULT '#007bff',
+  position TEXT DEFAULT 'bottom-right',
+  width INTEGER DEFAULT 380,
+  embed_mode TEXT DEFAULT 'popup',
+  font_family TEXT,
+  border_radius TEXT DEFAULT '8px',
+  FOREIGN KEY (agent_id) REFERENCES agents(id) ON DELETE CASCADE
+);
+```
+
+**Configuration Example:**
 ```javascript
+// Example agent configuration as stored in database
 {
-  "agents": {
-    "agent-123": {
-      "id": "character-c4d6907a-b76b-4729-b444-b2ba06d55133",
-      "name": "Customer Support Bot",
-      "apiKey": "tm-sk-specific-key-for-this-agent",
-      "allowedDomains": ["support.example.com", "help.example.com"],
-      "allowedPaths": ["/support/*", "/help/*"],
-      "rateLimit": {
-        "messagesPerHour": 100,
-        "messagesPerSession": 30
-      },
-      "features": {
-        "imageUpload": true,
-        "markdown": true,
-        "persistSession": false
-      },
-      "theme": {
-        "primaryColor": "#007bff",
-        "position": "bottom-right"
-      }
-    },
-    "agent-456": {
-      "id": "character-sales-assistant-789",
-      "name": "Sales Assistant",
-      "apiKey": "tm-sk-different-key",
-      "allowedDomains": ["shop.example.com"],
-      "allowedPaths": ["/*"],
-      "rateLimit": {
-        "messagesPerHour": 200,
-        "messagesPerSession": 50
-      }
-    }
+  id: "character-c4d6907a-b76b-4729-b444-b2ba06d55133",
+  name: "Customer Support Bot",
+  api_key: "tm-sk-specific-key-for-this-agent",
+  allowedDomains: ["support.example.com", "help.example.com"],
+  rateLimit: {
+    messages_per_hour: 100,
+    messages_per_session: 30
   },
-  "globalSettings": {
-    "defaultApiKey": "tm-sk-cfac2ddb-f1a8-4c5f-a5c8-695aa758b96a",
-    "adminPassword": "hashed-password-here",
-    "enableAnalytics": true
+  features: {
+    image_upload: true,
+    markdown: true,
+    persist_session: false
+  },
+  theme: {
+    primary_color: "#007bff",
+    position: "bottom-right",
+    width: 380,
+    embed_mode: "popup"
   }
 }
 ```
@@ -222,23 +258,44 @@ async function handleChatRequest(request) {
 
 ## Deployment Options
 
-### Option 1: Single Worker, Multiple Configurations
+### Option 1: Popup Mode (Floating Widget)
 ```javascript
-// Embed code for different sites
+// Embed code for floating chat button - uses admin settings
 <script src="https://chat.yourdomain.com/widget.js"></script>
 <script>
   TypingMindChat.init({
-    agentId: 'agent-123' // Automatically loads correct config
+    agentId: 'agent-123' // Position, width, embed_mode, and theme loaded from database
   });
 </script>
 ```
 
-### Option 2: Branded Deployments
+### Option 2: Inline Mode (Embedded in Container)
 ```javascript
-// Custom domain per client
-<script src="https://chat.client1.com/widget.js"></script>
+// Embed code for inline chat that fills a container
+<div id="chat-container" style="height: 500px; width: 100%;">
+  <!-- Chat widget will fill this container -->
+</div>
+<script src="https://chat.yourdomain.com/widget.js"></script>
 <script>
-  TypingMindChat.init(); // Uses default agent for domain
+  TypingMindChat.init({
+    agentId: 'agent-123',
+    container: document.getElementById('chat-container'),
+    embedMode: 'inline' // Override admin setting to use inline mode
+  });
+</script>
+```
+
+### Option 3: Override Admin Settings
+```javascript
+// Override specific settings if needed
+<script src="https://chat.yourdomain.com/widget.js"></script>
+<script>
+  TypingMindChat.init({
+    agentId: 'agent-123',
+    position: 'top-left', // Override admin setting
+    width: '450px',       // Override admin setting
+    embedMode: 'popup'    // Override admin setting
+  });
 </script>
 ```
 
@@ -350,41 +407,193 @@ const RATE_LIMIT_TIERS = {
 # Install dependencies
 npm install
 
-# Run admin panel locally
-npm run dev:admin
+# Run worker locally (includes admin panel)
+wrangler dev
 
-# Test Worker locally
-npm run dev:worker
-
-# Run widget dev server
+# Test widget locally
 npm run dev:widget
+
+# Build widget
+npm run build:widget
 ```
 
 ### Deployment
 ```bash
-# Deploy Worker and admin
-npm run deploy:worker
+# Deploy Worker (includes admin panel)
+wrangler deploy worker-d1.js
 
 # Build and deploy widget
 npm run build:widget
 npm run deploy:widget
 
-# Update KV configurations
-npm run sync:config
+# Execute database migrations if needed
+wrangler d1 execute typingmind-chatbot-db --file=migration.sql --remote
 ```
+
+## Widget Architecture
+
+### Widget Component Structure
+```javascript
+// Widget namespace structure
+window.TypingMindChat = {
+  instances: {},      // Multiple widget instances
+  config: {},         // Global configuration
+  utils: {},          // Utility functions
+  components: {},     // UI components
+  api: {}            // API communication layer
+};
+```
+
+### Shadow DOM Implementation
+```javascript
+class ChatWidget {
+  constructor(config) {
+    this.config = config;
+    this.root = this.createShadowRoot();
+    this.state = {
+      isOpen: false,
+      messages: [],
+      sessionId: this.generateSessionId(),
+      isLoading: false
+    };
+  }
+  
+  createShadowRoot() {
+    const container = document.createElement('div');
+    container.id = `typingmind-widget-${this.config.agentId}`;
+    container.style.cssText = 'position:fixed;z-index:9999;';
+    
+    const shadow = container.attachShadow({ mode: 'closed' });
+    shadow.innerHTML = this.getTemplate();
+    
+    document.body.appendChild(container);
+    return shadow;
+  }
+}
+```
+
+### Event System
+```javascript
+// Custom event system for widget communication
+const EventBus = {
+  events: {},
+  
+  on(event, callback) {
+    if (!this.events[event]) this.events[event] = [];
+    this.events[event].push(callback);
+  },
+  
+  emit(event, data) {
+    if (!this.events[event]) return;
+    this.events[event].forEach(cb => cb(data));
+  }
+};
+```
+
+### Mobile Responsiveness
+```css
+/* Responsive breakpoints */
+@media (max-width: 768px) {
+  .chat-window {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 0;
+  }
+}
+
+/* Touch-friendly controls */
+.chat-input {
+  min-height: 44px; /* iOS touch target */
+  font-size: 16px; /* Prevent zoom on iOS */
+}
+```
+
+### Performance Optimization
+- **Lazy Loading**: Widget loads only when user interacts
+- **Message Virtualization**: Render only visible messages
+- **Debounced Input**: Prevent excessive API calls
+- **Asset Caching**: Cache widget resources in browser
+- **Minimal Bundle**: < 50KB gzipped
+
+## Widget Features
+
+### Core UI Components
+1. **Chat Button**
+   - Customizable position and style
+   - Badge for unread messages
+   - Smooth animations
+   - Accessibility compliant
+
+2. **Chat Window**
+   - Header with agent name and controls
+   - Scrollable message area
+   - Input field with character counter
+   - Typing indicators
+   - Connection status
+
+3. **Message Types**
+   - Text messages with markdown
+   - System messages
+   - Error messages
+   - Loading states
+   - Timestamps
+
+### Advanced Features
+1. **Session Persistence**
+   - Save conversation to localStorage
+   - Resume conversations
+   - Clear history option
+
+2. **Offline Support**
+   - Queue messages when offline
+   - Retry failed messages
+   - Show connection status
+
+3. **Customization API**
+   ```javascript
+   TypingMindChat.init({
+     agentId: 'agent-123',
+     // Position, width, and embed mode are configured in admin panel
+     // But can be overridden here if needed:
+     position: 'bottom-right', // Optional override
+     width: '400px',          // Optional override
+     embedMode: 'popup',      // Optional override (popup/inline)
+     container: null,         // Required for inline mode
+     theme: {
+       // Theme settings also come from admin panel
+       // These would override admin settings:
+       primaryColor: '#007bff',
+       fontFamily: 'Arial, sans-serif',
+       borderRadius: '8px'
+     },
+     onMessage: (message) => {
+       // Custom message handler
+     },
+     onOpen: () => {
+       // Widget opened callback
+     },
+     onClose: () => {
+       // Widget closed callback
+     }
+   });
+   ```
 
 ## Next Steps
 
 1. **Immediate Actions:**
-   - Set up Cloudflare account and KV namespace
-   - Create initial Worker with domain validation
-   - Build basic admin authentication
+   - Set up Cloudflare account and KV namespace ✓
+   - Create initial Worker with domain validation ✓
+   - Build basic admin authentication ✓
 
 2. **Short Term:**
-   - Implement agent configuration system
-   - Create admin UI for agent management
-   - Add domain restriction logic
-
+   - Implement agent configuration system ✓
+   - Create admin UI for agent management ✓
+   - Add domain restriction logic ✓
+   - **Develop chat widget UI components** ← Current
+   
 3. **Long Term:**
    - Advanced analytics dashboard
    - A/B testing capabilities

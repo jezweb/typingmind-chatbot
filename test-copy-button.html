@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Copy Widget Code</title>
+    <style>
+        body { padding: 20px; font-family: sans-serif; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; }
+        button { padding: 10px 20px; margin: 10px; cursor: pointer; }
+        #output { margin-top: 20px; padding: 10px; background: #f5f5f5; }
+    </style>
+</head>
+<body>
+    <h1>Test Copy Widget Code</h1>
+    
+    <div class="test-section">
+        <h2>Test Modern Clipboard API</h2>
+        <button onclick="testModernClipboard()">Test Modern API</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test Fallback Method</h2>
+        <button onclick="testFallbackClipboard()">Test Fallback</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>Check Browser Support</h2>
+        <button onclick="checkSupport()">Check Support</button>
+    </div>
+    
+    <div id="output"></div>
+    
+    <script>
+        function log(message) {
+            document.getElementById('output').innerHTML += message + '<br>';
+        }
+        
+        async function testModernClipboard() {
+            try {
+                if (navigator.clipboard && window.isSecureContext) {
+                    await navigator.clipboard.writeText('Test modern clipboard API');
+                    log('✅ Modern clipboard API works!');
+                } else {
+                    log('❌ Modern clipboard API not available');
+                    log('isSecureContext: ' + window.isSecureContext);
+                    log('navigator.clipboard: ' + !!navigator.clipboard);
+                }
+            } catch (error) {
+                log('❌ Modern clipboard error: ' + error.message);
+            }
+        }
+        
+        function testFallbackClipboard() {
+            try {
+                const textarea = document.createElement('textarea');
+                textarea.value = 'Test fallback clipboard';
+                textarea.style.position = 'fixed';
+                textarea.style.left = '-999999px';
+                document.body.appendChild(textarea);
+                textarea.focus();
+                textarea.select();
+                
+                const successful = document.execCommand('copy');
+                document.body.removeChild(textarea);
+                
+                if (successful) {
+                    log('✅ Fallback clipboard method works!');
+                } else {
+                    log('❌ Fallback clipboard method failed');
+                }
+            } catch (error) {
+                log('❌ Fallback clipboard error: ' + error.message);
+            }
+        }
+        
+        function checkSupport() {
+            log('=== Browser Support Check ===');
+            log('Protocol: ' + window.location.protocol);
+            log('isSecureContext: ' + window.isSecureContext);
+            log('navigator.clipboard exists: ' + !!navigator.clipboard);
+            log('document.execCommand exists: ' + !!document.execCommand);
+            log('User Agent: ' + navigator.userAgent);
+        }
+    </script>
+</body>
+</html>

@@ -1,5 +1,5 @@
 name = "typingmind-chatbot"
-main = "worker-bundle.js"
+main = "worker-d1.js"
 compatibility_date = "2024-01-01"
 account_id = "0460574641fdbb98159c98ebf593e2bd"
 
@@ -29,6 +29,11 @@ id = "8d28f73263ac4fefb9e89016086fa26a"
 [[kv_namespaces]]
 binding = "ADMIN_SESSIONS"
 id = "da66ec6fbda04790b24c30791c8b48ac"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "typingmind-chatbot-db"
+database_id = "48c95c1c-4f72-4195-928b-eaaaa2746106"
 
 # Development overrides
 [env.development]

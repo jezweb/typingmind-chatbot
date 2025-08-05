@@ -170,12 +170,14 @@ async function handleChatRequest(request, env, agentConfig, messages, sessionId)
   const apiHost = env.TYPINGMIND_API_HOST || 'https://api.typingmind.com';
   
   try {
-    // Log the API call details for debugging (without the actual messages to avoid JSON issues)
+    // Log the API call details for debugging
     console.log('Calling TypingMind API:', {
       url: `${apiHost}/api/v2/agents/${agentConfig.id}/chat`,
       agentId: agentConfig.id,
       hasApiKey: !!apiKey,
-      messageCount: messages.length
+      messageCount: messages.length,
+      apiKeyPrefix: apiKey ? apiKey.substring(0, 10) : 'none',
+      messages: messages
     });
     
     // Call TypingMind API
@@ -380,13 +382,18 @@ router.options('*', (request) => {
 
 // Chat endpoint
 router.post('/chat', async (request, env) => {
+  console.log('Chat endpoint hit');
   const origin = request.headers.get('Origin') || '*';
   
   try {
+    console.log('Starting chat request processing');
     // Validate request body
     let body;
     try {
       const rawBody = await request.text();
+      console.log('Raw request body:', rawBody);
+      console.log('Body length:', rawBody.length);
+      console.log('First 100 chars:', rawBody.substring(0, 100));
       body = JSON.parse(rawBody);
     } catch (e) {
       console.error('Failed to parse JSON:', e);
@@ -479,17 +486,17 @@ router.post('/chat', async (request, env) => {
       headers: newHeaders
     });
   } catch (error) {
-    console.error('Chat endpoint error:', error.message);
+    console.error('Chat endpoint error:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
     
-    // Create a simple error message without stack traces
-    let errorMessage = 'Internal server error';
-    if (error.message) {
-      // Only include the first line of the error message
-      errorMessage = error.message.split('\n')[0].substring(0, 100);
-    }
+    // Sanitize error message to remove any control characters
+    const sanitizedMessage = error.message.replace(/[\x00-\x1F\x7F]/g, ' ');
     
     return new Response(JSON.stringify({ 
-      error: errorMessage
+      error: `Chat endpoint error: ${sanitizedMessage}` 
     }), { 
       status: 500,
       headers: {

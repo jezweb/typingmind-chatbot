@@ -9,8 +9,9 @@ A multi-tenant chatbot platform that allows embedding AI agents from TypingMind 
 - 🔑 Per-agent API key management
 - 📊 Usage analytics and rate limiting
 - 🎨 Customizable widget themes
+- 📐 Dual embed modes: Popup (floating) or Inline (embedded)
 - ⚡ Serverless architecture with Cloudflare Workers
-- 💾 Configuration storage with Cloudflare KV
+- 💾 Configuration storage with Cloudflare D1 Database
 
 ## Quick Start
 
@@ -48,55 +49,63 @@ wrangler deploy
 
 1. Access the admin panel at: `https://your-worker.workers.dev/admin`
 2. Login with the password set in your environment variables
-3. Add agent configurations through Cloudflare KV dashboard
+3. Create and manage agents through the web interface
+4. Configure embed mode (popup/inline) per agent
+5. Copy the widget code from the dashboard
 
 ### Embedding the Widget
 
-Add this code to any website where you want the chatbot to appear:
+The widget supports two embed modes:
+
+#### Popup Mode (Default)
+Displays as a floating chat button in the corner of the page:
 
 ```html
 <script src="https://your-worker.workers.dev/widget.js"></script>
 <script>
   TypingMindChat.init({
+    agentId: 'your-agent-id'
+  });
+</script>
+```
+
+#### Inline Mode
+Embeds the chat directly into a container element on your page:
+
+```html
+<div id="chat-container" style="height: 500px; width: 100%;">
+  <!-- Chat widget will fill this container -->
+</div>
+<script src="https://your-worker.workers.dev/widget.js"></script>
+<script>
+  TypingMindChat.init({
     agentId: 'your-agent-id',
-    position: 'bottom-right'
+    container: document.getElementById('chat-container'),
+    embedMode: 'inline'
   });
 </script>
 ```
 
 ## Agent Configuration
 
-Agents are configured in the `AGENT_CONFIG` KV namespace with the following structure:
+Agents are managed through the admin panel at `/admin`. Configuration includes:
 
-```json
-{
-  "id": "character-uuid-from-typingmind",
-  "name": "Agent Name",
-  "apiKey": "optional-custom-api-key",
-  "allowedDomains": ["example.com", "*.example.com"],
-  "allowedPaths": ["/support/*"],
-  "rateLimit": {
-    "messagesPerHour": 100,
-    "messagesPerSession": 30
-  },
-  "features": {
-    "imageUpload": false,
-    "markdown": true,
-    "persistSession": false
-  },
-  "theme": {
-    "primaryColor": "#007bff",
-    "position": "bottom-right"
-  }
-}
-```
+- **Basic Settings**: Agent ID, name, and optional custom API key
+- **Domain Restrictions**: Allowed domains with wildcard support
+- **Rate Limiting**: Messages per hour and per session
+- **Features**: Image upload, markdown support, session persistence
+- **Theme Settings**: 
+  - Primary color
+  - Widget position (bottom-right, bottom-left, top-right, top-left)
+  - Widget width (300-600px)
+  - Embed mode (popup or inline)
 
 ## Security
 
 - Domain validation ensures widgets only work on authorized websites
-- API keys are stored securely in Cloudflare KV
-- Rate limiting prevents abuse
-- Admin panel is password protected
+- API keys are stored securely in Cloudflare D1 Database
+- Rate limiting prevents abuse (stored in KV)
+- Admin panel is password protected with session management
 
 ## Development
 
