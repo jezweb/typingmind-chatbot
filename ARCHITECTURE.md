@@ -117,6 +117,7 @@ The worker serves as the API gateway and handles request routing. As part of the
 #### Current Modules:
 - **lib/security.js**: CORS headers, security headers, domain validation, instance ID validation
 - **lib/database.js**: D1 database operations, instance CRUD operations, configuration queries
+- **lib/rate-limiter.js**: KV-based rate limiting, per-instance and per-session limits
 - **worker.js**: Main router and endpoint handlers (being refactored)
 
 #### Core Responsibilities:
@@ -125,6 +126,7 @@ The worker serves as the API gateway and handles request routing. As part of the
 - **API Proxying**: Forwards chat requests to TypingMind API
 - **Widget Delivery**: Serves the chat widget from KV storage
 - **CORS Management**: Handles cross-origin requests (via security module)
+- **Rate Limiting**: Enforces usage limits (via rate-limiter module)
 
 Key endpoints:
 - `GET /instance/:id` - Get instance configuration
@@ -577,10 +579,15 @@ As of 2025-08-06, the codebase is undergoing modularization to improve maintaina
   - Clone functionality
   - Transaction management
 
-### Planned Modules
 - **lib/rate-limiter.js** - Rate limiting logic
-  - KV-based rate limit tracking
+  - KV-based rate limit tracking with TTL
   - Per-instance and per-session limits
+  - Client ID extraction (session ID, IP, or anonymous)
+  - Rate limit key generation
+  - Error response creation with Retry-After headers
+  - Status checking without incrementing counts
+
+### Planned Modules
 - **lib/auth/** - Authentication utilities
   - Admin session management
   - Cookie handling
