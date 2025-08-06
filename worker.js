@@ -7,61 +7,17 @@ import {
   createResponseHeaders,
   handleCORSPreflight
 } from './lib/security.js';
+import {
+  getInstanceConfig,
+  getAllInstances,
+  getInstanceById,
+  createInstance,
+  updateInstance,
+  deleteInstance,
+  cloneInstance
+} from './lib/database.js';
 
 const router = Router();
-
-// Get instance configuration from D1
-async function getInstanceConfig(db, instanceId) {
-  const query = `
-    SELECT 
-      i.id, i.name, i.typingmind_agent_id, i.api_key,
-      rl.messages_per_hour, rl.messages_per_session,
-      f.image_upload, f.markdown, f.persist_session,
-      t.primary_color, t.position, t.width, t.embed_mode
-    FROM agent_instances i
-    LEFT JOIN instance_rate_limits rl ON i.id = rl.instance_id
-    LEFT JOIN instance_features f ON i.id = f.instance_id
-    LEFT JOIN instance_themes t ON i.id = t.instance_id
-    WHERE i.id = ?
-  `;
-  
-  const result = await db.prepare(query).bind(instanceId).first();
-  if (!result) return null;
-  
-  // Get allowed domains
-  const domains = await db.prepare(
-    'SELECT domain FROM instance_domains WHERE instance_id = ?'
-  ).bind(instanceId).all();
-  
-  // Get allowed paths
-  const paths = await db.prepare(
-    'SELECT path FROM instance_paths WHERE instance_id = ?'
-  ).bind(instanceId).all();
-  
-  return {
-    id: result.id,
-    name: result.name,
-    typingmindAgentId: result.typingmind_agent_id,
-    apiKey: result.api_key,
-    allowedDomains: domains.results.map(d => d.domain),
-    allowedPaths: paths.results.map(p => p.path),
-    rateLimit: {
-      messagesPerHour: result.messages_per_hour || 100,
-      messagesPerSession: result.messages_per_session || 30
-    },
-    features: {
-      imageUpload: !!result.image_upload,
-      markdown: !!result.markdown,
-      persistSession: !!result.persist_session
-    },
-    theme: {
-      primaryColor: result.primary_color || '#007bff',
-      position: result.position || 'bottom-right',
-      width: result.width || 380,
-      embedMode: result.embed_mode || 'popup'
-    }
-  };
-}
 
 
 // Rate limiting implementation
@@ -890,18 +846,9 @@ router.get('/admin/dashboard', async (request, env) => {
   }
   
   // Get all instances from database with v2 schema
-  const instances = await env.DB.prepare(`
-    SELECT i.*, 
-      COUNT(DISTINCT d.id) as domain_count,
-      COUNT(DISTINCT p.id) as path_count
-    FROM agent_instances i
-    LEFT JOIN instance_domains d ON i.id = d.instance_id
-    LEFT JOIN instance_paths p ON i.id = p.instance_id
-    GROUP BY i.id
-    ORDER BY i.created_at DESC
-  `).all();
+  const instances = await getAllInstances(env.DB);
   
-  const instanceRows = instances.results.map(instance => `
+  const instanceRows = instances.map(instance => `
     <tr>
       <td>${instance.name}</td>
       <td><code>${instance.id}</code></td>
@@ -1155,45 +1102,8 @@ router.post('/admin/instances', async (request, env) => {
       });
     }
     
-    // Start transaction
-    const statements = [];
-    
-    // Insert instance
-    statements.push(env.DB.prepare(
-      `INSERT INTO agent_instances (id, typingmind_agent_id, name, api_key) 
-       VALUES (?, ?, ?, ?)`
-    ).bind(data.id, data.typingmind_agent_id, data.name, data.api_key || null));
-    
-    // Insert domains
-    if (data.domains && data.domains.length > 0) {
-      for (const domain of data.domains) {
-        statements.push(env.DB.prepare(
-          `INSERT INTO instance_domains (instance_id, domain) VALUES (?, ?)`
-        ).bind(data.id, domain));
-      }
-    }
-    
-    // Insert rate limits
-    statements.push(env.DB.prepare(
-      `INSERT INTO instance_rate_limits (instance_id, messages_per_hour, messages_per_session) 
-       VALUES (?, ?, ?)`
-    ).bind(data.id, data.messages_per_hour || 100, data.messages_per_session || 30));
-    
-    // Insert features
-    statements.push(env.DB.prepare(
-      `INSERT INTO instance_features (instance_id, image_upload, markdown, persist_session) 
-       VALUES (?, ?, ?, ?)`
-    ).bind(data.id, data.image_upload ? 1 : 0, data.markdown ? 1 : 0, data.persist_session ? 1 : 0));
-    
-    // Insert theme
-    statements.push(env.DB.prepare(
-      `INSERT INTO instance_themes (instance_id, primary_color, position, width, embed_mode) 
-       VALUES (?, ?, ?, ?, ?)`
-    ).bind(data.id, data.primary_color || '#007bff', data.position || 'bottom-right', 
-           data.width || 380, data.embed_mode || 'popup'));
-    
-    // Execute all statements
-    await env.DB.batch(statements);
+    // Create instance with all related data
+    await createInstance(env.DB, data);
     
     return new Response(JSON.stringify({ success: true, id: data.id }), {
       status: 201,
@@ -1224,7 +1134,7 @@ router.delete('/admin/instances/:id', async (request, env) => {
     const { id } = request.params;
     
     // Delete instance (cascading deletes will handle related tables)
-    await env.DB.prepare('DELETE FROM agent_instances WHERE id = ?').bind(id).run();
+    await deleteInstance(env.DB, id);
     
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
@@ -1254,33 +1164,13 @@ router.get('/admin/instances/:id/edit', async (request, env) => {
   const { id } = request.params;
   
   // Get instance data with all related data
-  const instance = await env.DB.prepare(`
-    SELECT * FROM agent_instances WHERE id = ?
-  `).bind(id).first();
+  const instanceData = await getInstanceById(env.DB, id);
   
-  if (!instance) {
+  if (!instanceData) {
     return new Response('Instance not found', { status: 404 });
   }
   
-  // Get domains
-  const domains = await env.DB.prepare(`
-    SELECT domain FROM instance_domains WHERE instance_id = ?
-  `).bind(id).all();
-  
-  // Get features
-  const features = await env.DB.prepare(`
-    SELECT * FROM instance_features WHERE instance_id = ?
-  `).bind(id).first();
-  
-  // Get rate limits
-  const rateLimits = await env.DB.prepare(`
-    SELECT * FROM instance_rate_limits WHERE instance_id = ?
-  `).bind(id).first();
-  
-  // Get theme
-  const theme = await env.DB.prepare(`
-    SELECT * FROM instance_themes WHERE instance_id = ?
-  `).bind(id).first();
+  const { instance, domains, features, rateLimits, theme } = instanceData;
   
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -1330,7 +1220,7 @@ router.get('/admin/instances/:id/edit', async (request, env) => {
       
       <div class="form-group">
         <label for="domains">Allowed Domains (one per line)</label>
-        <textarea id="domains" name="domains">${domains.results.map(d => d.domain).join('\n')}</textarea>
+        <textarea id="domains" name="domains">${domains.map(d => d.domain).join('\n')}</textarea>
         <div class="help-text">Use * for wildcard, e.g., *.example.com</div>
       </div>
       
@@ -1421,44 +1311,8 @@ router.put('/admin/instances/:id', async (request, env) => {
     const { id } = request.params;
     const data = await request.json();
     
-    // Start transaction
-    const statements = [];
-    
-    // Update main instance
-    statements.push(env.DB.prepare(`
-      UPDATE agent_instances 
-      SET name = ?, typingmind_agent_id = ?, api_key = ?, updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `).bind(data.name, data.typingmind_agent_id, data.api_key || null, id));
-    
-    // Delete existing domains and re-insert
-    statements.push(env.DB.prepare('DELETE FROM instance_domains WHERE instance_id = ?').bind(id));
-    if (data.domains && data.domains.length > 0) {
-      for (const domain of data.domains) {
-        statements.push(env.DB.prepare('INSERT INTO instance_domains (instance_id, domain) VALUES (?, ?)').bind(id, domain));
-      }
-    }
-    
-    // Update features
-    statements.push(env.DB.prepare(`
-      INSERT OR REPLACE INTO instance_features (instance_id, markdown, image_upload, persist_session) 
-      VALUES (?, ?, ?, ?)
-    `).bind(id, data.markdown ? 1 : 0, data.image_upload ? 1 : 0, data.persist_session ? 1 : 0));
-    
-    // Update rate limits
-    statements.push(env.DB.prepare(`
-      INSERT OR REPLACE INTO instance_rate_limits (instance_id, messages_per_hour, messages_per_session) 
-      VALUES (?, ?, ?)
-    `).bind(id, data.messages_per_hour, data.messages_per_session));
-    
-    // Update theme
-    statements.push(env.DB.prepare(`
-      INSERT OR REPLACE INTO instance_themes (instance_id, primary_color, position, width, embed_mode) 
-      VALUES (?, ?, ?, ?, ?)
-    `).bind(id, data.primary_color, data.position, data.width, data.embed_mode));
-    
-    // Execute all statements
-    await env.DB.batch(statements);
+    // Update instance with all related data
+    await updateInstance(env.DB, id, data);
     
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
@@ -1492,76 +1346,18 @@ router.post('/admin/instances/:id/clone', async (request, env) => {
     // Generate new instance ID
     const newId = name.toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + Date.now();
     
-    // Get source instance data
-    const source = await env.DB.prepare(`
-      SELECT * FROM agent_instances WHERE id = ?
-    `).bind(id).first();
-    
-    if (!source) {
-      return new Response(JSON.stringify({ error: 'Source instance not found' }), {
-        status: 404,
-        headers: { 'Content-Type': 'application/json' }
-      });
+    // Clone instance with all settings
+    try {
+      await cloneInstance(env.DB, id, newId, name);
+    } catch (error) {
+      if (error.message === 'Source instance not found') {
+        return new Response(JSON.stringify({ error: 'Source instance not found' }), {
+          status: 404,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      throw error;
     }
-    
-    // Start transaction
-    const statements = [];
-    
-    // Clone instance
-    statements.push(env.DB.prepare(
-      `INSERT INTO agent_instances (id, typingmind_agent_id, name, api_key) 
-       VALUES (?, ?, ?, ?)`
-    ).bind(newId, source.typingmind_agent_id, name, source.api_key));
-    
-    // Clone domains
-    const domains = await env.DB.prepare(
-      'SELECT domain FROM instance_domains WHERE instance_id = ?'
-    ).bind(id).all();
-    
-    for (const domain of domains.results) {
-      statements.push(env.DB.prepare(
-        `INSERT INTO instance_domains (instance_id, domain) VALUES (?, ?)`
-      ).bind(newId, domain.domain));
-    }
-    
-    // Clone rate limits
-    const rateLimits = await env.DB.prepare(
-      'SELECT * FROM instance_rate_limits WHERE instance_id = ?'
-    ).bind(id).first();
-    
-    if (rateLimits) {
-      statements.push(env.DB.prepare(
-        `INSERT INTO instance_rate_limits (instance_id, messages_per_hour, messages_per_session) 
-         VALUES (?, ?, ?)`
-      ).bind(newId, rateLimits.messages_per_hour, rateLimits.messages_per_session));
-    }
-    
-    // Clone features
-    const features = await env.DB.prepare(
-      'SELECT * FROM instance_features WHERE instance_id = ?'
-    ).bind(id).first();
-    
-    if (features) {
-      statements.push(env.DB.prepare(
-        `INSERT INTO instance_features (instance_id, image_upload, markdown, persist_session) 
-         VALUES (?, ?, ?, ?)`
-      ).bind(newId, features.image_upload, features.markdown, features.persist_session));
-    }
-    
-    // Clone theme
-    const theme = await env.DB.prepare(
-      'SELECT * FROM instance_themes WHERE instance_id = ?'
-    ).bind(id).first();
-    
-    if (theme) {
-      statements.push(env.DB.prepare(
-        `INSERT INTO instance_themes (instance_id, primary_color, position, width, embed_mode) 
-         VALUES (?, ?, ?, ?, ?)`
-      ).bind(newId, theme.primary_color, theme.position, theme.width, theme.embed_mode));
-    }
-    
-    // Execute all statements
-    await env.DB.batch(statements);
     
     return new Response(JSON.stringify({ success: true, id: newId }), {
       status: 201,
