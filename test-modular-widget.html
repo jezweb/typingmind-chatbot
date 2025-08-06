@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Modular Widget</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .inline-container {
+            width: 100%;
+            height: 600px;
+            border: 2px solid #007bff;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 4px;
+            background: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .log {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>TypingMind Chat Widget - Modular Test</h1>
+    
+    <div class="test-section">
+        <h2>Test Controls</h2>
+        <button onclick="initPopupWidget()">Init Popup Widget</button>
+        <button onclick="initInlineWidget()">Init Inline Widget</button>
+        <button onclick="destroyWidget()">Destroy Widget</button>
+        <button onclick="openWidget()">Open Widget</button>
+        <button onclick="closeWidget()">Close Widget</button>
+        <button onclick="clearLog()">Clear Log</button>
+        
+        <div id="log" class="log"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Inline Widget Container</h2>
+        <div id="inline-container" class="inline-container"></div>
+    </div>
+    
+    <!-- Load the modular widget -->
+    <script src="widget/dist/widget.js"></script>
+    
+    <script>
+        let currentWidgetId = null;
+        
+        function log(message) {
+            const logEl = document.getElementById('log');
+            const time = new Date().toLocaleTimeString();
+            logEl.innerHTML += `[${time}] ${message}<br>`;
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+        
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+        
+        function initPopupWidget() {
+            try {
+                if (currentWidgetId) {
+                    TypingMindChat.destroy(currentWidgetId);
+                }
+                
+                currentWidgetId = 'test-popup';
+                const widget = TypingMindChat.init({
+                    instanceId: currentWidgetId,
+                    position: 'bottom-right',
+                    theme: {
+                        primaryColor: '#28a745',
+                        borderRadius: '12px'
+                    },
+                    onOpen: () => log('Widget opened'),
+                    onClose: () => log('Widget closed'),
+                    onMessage: (msg) => log(`Message received: ${msg.content.substring(0, 50)}...`)
+                });
+                
+                log('Popup widget initialized');
+            } catch (error) {
+                log(`Error: ${error.message}`);
+            }
+        }
+        
+        function initInlineWidget() {
+            try {
+                if (currentWidgetId) {
+                    TypingMindChat.destroy(currentWidgetId);
+                }
+                
+                // Clear container
+                const container = document.getElementById('inline-container');
+                container.innerHTML = '';
+                
+                currentWidgetId = 'test-inline';
+                const widget = TypingMindChat.init({
+                    instanceId: currentWidgetId,
+                    container: container,
+                    embedMode: 'inline',
+                    height: 500,
+                    theme: {
+                        primaryColor: '#dc3545',
+                        fontFamily: 'Georgia, serif'
+                    },
+                    onMessage: (msg) => log(`Message received: ${msg.content.substring(0, 50)}...`)
+                });
+                
+                log('Inline widget initialized');
+            } catch (error) {
+                log(`Error: ${error.message}`);
+            }
+        }
+        
+        function destroyWidget() {
+            if (currentWidgetId) {
+                TypingMindChat.destroy(currentWidgetId);
+                log(`Widget ${currentWidgetId} destroyed`);
+                currentWidgetId = null;
+            } else {
+                log('No widget to destroy');
+            }
+        }
+        
+        function openWidget() {
+            if (currentWidgetId) {
+                TypingMindChat.open(currentWidgetId);
+                log('Widget opened programmatically');
+            } else {
+                log('No widget to open');
+            }
+        }
+        
+        function closeWidget() {
+            if (currentWidgetId) {
+                TypingMindChat.close(currentWidgetId);
+                log('Widget closed programmatically');
+            } else {
+                log('No widget to close');
+            }
+        }
+        
+        // Log initial state
+        log('Test page loaded');
+        log('TypingMindChat available: ' + (typeof TypingMindChat !== 'undefined'));
+    </script>
+</body>
+</html>
