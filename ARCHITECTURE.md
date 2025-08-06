@@ -119,7 +119,11 @@ The worker serves as the API gateway and handles request routing. As part of the
 - **lib/database.js**: D1 database operations, instance CRUD operations, configuration queries
 - **lib/rate-limiter.js**: KV-based rate limiting, per-instance and per-session limits
 - **lib/auth.js**: Admin authentication, session management, cookie handling
-- **worker.js**: Main router and endpoint handlers (being refactored)
+- **lib/routes/chat.js**: Chat API endpoints (/chat, /instance/:id)
+- **lib/routes/widget.js**: Widget delivery endpoint (/widget.js)
+- **lib/routes/admin.js**: Admin panel routes (login, dashboard, JS delivery)
+- **lib/routes/admin-crud.js**: Admin CRUD operations (create, edit, delete, clone)
+- **worker.js**: Main router with minimal logic, imports and uses route handlers
 
 #### Core Responsibilities:
 - **Instance Resolution**: Maps instance IDs to TypingMind agent IDs
@@ -596,11 +600,38 @@ As of 2025-08-06, the codebase is undergoing modularization to improve maintaina
   - Session creation and deletion
   - Unauthorized response helpers
 
+- **lib/routes/chat.js** - Chat API routes
+  - Instance information endpoint (GET /instance/:id)
+  - Chat messaging endpoint (POST /chat)
+  - Request validation and size limits
+  - Domain authorization checks
+  - Rate limiting integration
+  - TypingMind API proxy with timeout handling
+  - Error handling and response formatting
+
+- **lib/routes/widget.js** - Widget delivery route
+  - Widget JavaScript delivery (GET /widget.js)
+  - KV storage integration
+  - Cache headers for performance
+  - Fallback error message when not deployed
+
+- **lib/routes/admin.js** - Admin panel routes
+  - Admin JavaScript delivery (GET /admin/admin.js)
+  - Login page (GET /admin)
+  - Login endpoint (POST /admin/login)
+  - Logout endpoint (POST /admin/logout)
+  - Dashboard page (GET /admin/dashboard)
+  - Client-side JavaScript for admin functionality
+
+- **lib/routes/admin-crud.js** - Admin CRUD routes
+  - Create instance form (GET /admin/instances/new)
+  - Create instance endpoint (POST /admin/instances)
+  - Edit instance form (GET /admin/instances/:id/edit)
+  - Update instance endpoint (PUT /admin/instances/:id)
+  - Delete instance endpoint (DELETE /admin/instances/:id)
+  - Clone instance endpoint (POST /admin/instances/:id/clone)
+
 ### Planned Modules
-- **routes/** - Modular route handlers
-  - chat.js - Chat API endpoints
-  - admin/ - Admin panel routes
-  - widget.js - Widget delivery
 - **templates/** - HTML templates
   - Admin panel templates
   - Layout components

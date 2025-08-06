@@ -13,7 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Database module extraction** - Moved all D1 database operations to lib/database.js (Phase 2)
 - **Rate limiting module extraction** - Moved rate limiting logic to lib/rate-limiter.js (Phase 3)
 - **Auth module extraction** - Moved admin authentication and session management to lib/auth.js (Phase 4)
-- **Worker size reduction** - Reduced worker.js from 1,707 to 1,240 lines (467 lines total reduction)
+- **Route modules extraction** - Moved all route handlers to lib/routes/*.js (Phase 5)
+- **Worker size reduction** - Reduced worker.js from 1,707 to 72 lines (1,635 lines total reduction, 95.8% reduction)
 
 ### 🎯 Added
 - **ES modules support** - Configured project to use ES modules throughout
@@ -21,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Database module tests** - Comprehensive test suite for database operations (12 tests)
 - **Rate limiter module tests** - Comprehensive test suite for rate limiting (17 tests)
 - **Auth module tests** - Comprehensive test suite for authentication (26 tests)
+- **Chat routes tests** - Comprehensive test suite for chat endpoints (16 tests)
+- **Widget routes tests** - Test suite for widget delivery (3 tests)
 - **Jest configuration** - Set up Jest for ES module testing
 
 ### 📁 Project Structure
@@ -33,6 +36,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `lib/rate-limiter.test.js` with comprehensive tests
 - Added `lib/auth.js` with admin authentication and session management
 - Added `lib/auth.test.js` with comprehensive tests
+- Created `lib/routes/` directory for route handlers
+- Added `lib/routes/chat.js` with chat API endpoints
+- Added `lib/routes/chat.test.js` with comprehensive tests
+- Added `lib/routes/widget.js` with widget delivery endpoint
+- Added `lib/routes/widget.test.js` with tests
+- Added `lib/routes/admin.js` with admin panel routes
+- Added `lib/routes/admin-crud.js` with admin CRUD operations
 - Added `jest.config.js` for test configuration
 
 ## [2.2.1] - 2025-08-06
