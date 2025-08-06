@@ -108,9 +108,16 @@ TypingMind API details:
 │   │   └── widget.min.js  # Production bundle (~23KB)
 │   ├── build.js           # Build script for widget
 │   └── demo.html          # Testing page
+├── assets/                # Static assets served by worker
+│   └── test/             # Test pages
+│       ├── index.html     # Test page index
+│       ├── comprehensive.html # Comprehensive widget test
+│       ├── automated.html # Automated test page
+│       ├── automated.js   # Automated test script
+│       └── embed.html     # Production embed test
 ├── wrangler.toml          # Cloudflare Worker configuration
 ├── deploy-widget.sh       # Widget deployment script
-├── test-clean-system.html # Test page for multi-instance setup
+├── test-clean-system.html # Local test page for multi-instance setup
 ├── admin.js               # Admin panel JavaScript functions
 └── docs/                  # Documentation
     ├── ARCHITECTURE.md    # Comprehensive architecture guide
@@ -213,9 +220,18 @@ TypingMindChat.init({
   instanceId: 'support-bot',       // Required
   container: document.getElementById('chat-container'), // Required for inline
   embedMode: 'inline',             // Override instance setting
+  height: 600,                     // Optional: fixed height in pixels (default: 600)
+  // height: '80%',                // Or use percentage of container height
   onMessage: (msg) => {}           // Message received callback
 });
 ```
+
+#### Height Configuration for Inline Mode
+- **Default**: 600px if not specified
+- **Number**: Pixel value (e.g., `height: 450`)
+- **String**: CSS value (e.g., `height: '80%'`, `height: '500px'`)
+- **Container**: If no height is set, widget respects container's height constraints
+- **Scrolling**: Messages area automatically scrolls when content exceeds widget height
 
 ## Current Implementation Status
 
@@ -387,20 +403,18 @@ TypingMindChat.init({
 ```
 
 ### Test Pages
-The system includes comprehensive test pages available on Cloudflare:
+The system includes comprehensive test pages served as static assets:
 
-- **Test Index**: https://typingmind-chatbot.webfonts.workers.dev/test
+- **Test Index**: https://typingmind-chatbot.webfonts.workers.dev/test/
 - **Comprehensive Test**: https://typingmind-chatbot.webfonts.workers.dev/test/comprehensive
 - **Automated Tests**: https://typingmind-chatbot.webfonts.workers.dev/test/automated
 - **Production Embed Test**: https://typingmind-chatbot.webfonts.workers.dev/test/embed
+- **Height Configuration Test**: https://typingmind-chatbot.webfonts.workers.dev/test/height-test
 
-Deploy test pages with:
-```bash
-./deploy-tests.sh
-```
+Test pages are automatically deployed with the worker as static assets in the `assets/test/` directory.
 
 ## Version History
 
 See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
 
-Current version: **2.1.1** (Widget deployment fix, removed agentId backward compatibility)
+Current version: **2.2.0** (Added height configuration for inline widgets)

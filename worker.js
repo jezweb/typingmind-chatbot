@@ -136,28 +136,77 @@ async function checkAndUpdateRateLimit(env, options) {
   };
 }
 
-// Simple domain validation
+// Enhanced domain validation with better debugging
 async function validateDomain(request, instanceConfig) {
   const origin = request.headers.get('Origin');
   const referer = request.headers.get('Referer');
+  const requestHost = request.headers.get('Host');
   
-  if (!origin && !referer) return false;
+  // Debug logging
+  console.log('[validateDomain] Headers:', {
+    origin,
+    referer,
+    host: requestHost,
+    method: request.method,
+    url: request.url
+  });
+  
+  // For same-origin requests (like test pages), check if the request is from the worker's own domain
+  if (!origin && !referer) {
+    // If no origin/referer but we have a host header, check if it's the same domain
+    if (requestHost) {
+      const workerUrl = new URL(request.url);
+      console.log('[validateDomain] Same-origin check:', {
+        requestHost,
+        workerHost: workerUrl.hostname
+      });
+      
+      // Allow requests from the same domain (like our test pages)
+      if (requestHost === workerUrl.hostname || 
+          requestHost.startsWith(workerUrl.hostname)) {
+        console.log('[validateDomain] Same-origin request allowed');
+        return true;
+      }
+    }
+    
+    console.log('[validateDomain] No origin/referer headers, rejecting');
+    return false;
+  }
   
   try {
     const requestUrl = origin || referer;
     const { hostname } = new URL(requestUrl);
     
-    return instanceConfig.allowedDomains.some(allowedDomain => {
+    console.log('[validateDomain] Checking hostname:', hostname);
+    console.log('[validateDomain] Allowed domains:', instanceConfig.allowedDomains);
+    
+    const isAllowed = instanceConfig.allowedDomains.some(allowedDomain => {
       // Allow wildcard * for all domains
-      if (allowedDomain === '*') return true;
+      if (allowedDomain === '*') {
+        console.log('[validateDomain] Wildcard * matched');
+        return true;
+      }
       
       if (allowedDomain.startsWith('*.')) {
         const baseDomain = allowedDomain.substring(2);
-        return hostname === baseDomain || hostname.endsWith(`.${baseDomain}`);
+        const matches = hostname === baseDomain || hostname.endsWith(`.${baseDomain}`);
+        if (matches) {
+          console.log(`[validateDomain] Wildcard domain ${allowedDomain} matched`);
+        }
+        return matches;
       }
-      return hostname === allowedDomain;
+      
+      const exactMatch = hostname === allowedDomain;
+      if (exactMatch) {
+        console.log(`[validateDomain] Exact domain ${allowedDomain} matched`);
+      }
+      return exactMatch;
     });
+    
+    console.log('[validateDomain] Final result:', isAllowed);
+    return isAllowed;
   } catch (error) {
+    console.error('[validateDomain] Error:', error);
     return false;
   }
 }
@@ -305,9 +354,23 @@ router.post('/chat', async (request, env) => {
         allowedDomains: instanceConfig.allowedDomains,
         instanceId
       });
+      // Get request details for better error message
+      const origin = request.headers.get('Origin');
+      const referer = request.headers.get('Referer');
+      const requestDomain = origin || referer || 'Unknown domain';
+      
       return new Response(JSON.stringify({ 
         error: 'Domain not authorized',
-        details: 'This domain is not allowed to use this chat instance'
+        details: `Domain ${requestDomain} is not in the allowed list for instance '${instanceId}'. Allowed domains: ${instanceConfig.allowedDomains.join(', ')}`,
+        debugInfo: {
+          requestHeaders: {
+            origin: origin || 'not provided',
+            referer: referer || 'not provided',
+            host: request.headers.get('Host') || 'not provided'
+          },
+          instanceId,
+          allowedDomains: instanceConfig.allowedDomains
+        }
       }), {
         status: 403,
         headers: responseHeaders
@@ -1625,129 +1688,6 @@ router.post('/admin/instances/:id/clone', async (request, env) => {
       headers: { 'Content-Type': 'application/json' }
     });
   }
-});
-
-// Test pages
-router.get('/test', async (request, env) => {
-  const html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Widget Test Pages - TypingMind Chatbot</title>
-  <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; padding: 40px; background: #f5f5f5; }
-    .container { max-width: 800px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-    h1 { color: #333; margin-bottom: 10px; }
-    .subtitle { color: #666; margin-bottom: 30px; }
-    .test-list { list-style: none; padding: 0; }
-    .test-item { margin: 20px 0; padding: 20px; background: #f8f9fa; border-radius: 6px; border: 1px solid #e9ecef; }
-    .test-item h3 { margin-top: 0; color: #333; }
-    .test-item p { color: #666; margin: 10px 0; }
-    .test-link { display: inline-block; background: #007bff; color: white; padding: 10px 20px; border-radius: 4px; text-decoration: none; }
-    .test-link:hover { background: #0056b3; }
-    .badge { display: inline-block; padding: 3px 8px; border-radius: 3px; font-size: 12px; font-weight: 500; margin-left: 10px; }
-    .badge.interactive { background: #28a745; color: white; }
-    .badge.automated { background: #17a2b8; color: white; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h1>TypingMind Widget Test Pages</h1>
-    <p class="subtitle">Test the widget functionality with different configurations and scenarios</p>
-    
-    <ul class="test-list">
-      <li class="test-item">
-        <h3>Comprehensive Widget Test <span class="badge interactive">Interactive</span></h3>
-        <p>Test multiple widget scenarios including valid instances, error handling, and inline mode.</p>
-        <a href="/test/comprehensive" class="test-link">Open Test</a>
-      </li>
-      
-      <li class="test-item">
-        <h3>Automated Test Suite <span class="badge automated">Automated</span></h3>
-        <p>Run automated tests that verify widget loading, initialization, and lifecycle.</p>
-        <a href="/test/automated" class="test-link">Run Tests</a>
-      </li>
-      
-      <li class="test-item">
-        <h3>Production Embed Test <span class="badge interactive">Interactive</span></h3>
-        <p>Test the exact embed code that users will use on their websites.</p>
-        <a href="/test/embed" class="test-link">Open Test</a>
-      </li>
-    </ul>
-    
-    <div style="margin-top: 40px; padding: 20px; background: #f8f9fa; border-radius: 6px;">
-      <h4 style="margin-top: 0;">Widget URLs</h4>
-      <p><strong>Production Widget:</strong> <code>https://typingmind-chatbot.webfonts.workers.dev/widget.js</code></p>
-      <p><strong>Test Instances:</strong></p>
-      <ul>
-        <li><code>seo-assistant</code> - SEO Assistant Bot (popup mode)</li>
-        <li><code>support-bot</code> - Customer Support Bot (inline mode)</li>
-      </ul>
-    </div>
-  </div>
-</body>
-</html>`;
-  
-  return new Response(html, {
-    headers: {
-      'Content-Type': 'text/html;charset=UTF-8',
-      ...securityHeaders
-    }
-  });
-});
-
-// Test page routes
-router.get('/test/comprehensive', async (request, env) => {
-  const testHtml = await env.AGENT_CONFIG.get('test:comprehensive');
-  if (!testHtml) {
-    return new Response('Test page not found. Please deploy test files.', { status: 404 });
-  }
-  return new Response(testHtml, {
-    headers: {
-      'Content-Type': 'text/html;charset=UTF-8',
-      ...securityHeaders
-    }
-  });
-});
-
-router.get('/test/automated', async (request, env) => {
-  const testHtml = await env.AGENT_CONFIG.get('test:automated');
-  if (!testHtml) {
-    return new Response('Test page not found. Please deploy test files.', { status: 404 });
-  }
-  return new Response(testHtml, {
-    headers: {
-      'Content-Type': 'text/html;charset=UTF-8',
-      ...securityHeaders
-    }
-  });
-});
-
-router.get('/test/embed', async (request, env) => {
-  const testHtml = await env.AGENT_CONFIG.get('test:embed');
-  if (!testHtml) {
-    return new Response('Test page not found. Please deploy test files.', { status: 404 });
-  }
-  return new Response(testHtml, {
-    headers: {
-      'Content-Type': 'text/html;charset=UTF-8',
-      ...securityHeaders
-    }
-  });
-});
-
-router.get('/test/automated.js', async (request, env) => {
-  const testJs = await env.AGENT_CONFIG.get('test:automated.js');
-  if (!testJs) {
-    return new Response('Test script not found. Please deploy test files.', { status: 404 });
-  }
-  return new Response(testJs, {
-    headers: {
-      'Content-Type': 'application/javascript',
-      ...securityHeaders
-    }
-  });
 });
 
 // Health check

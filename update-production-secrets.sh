@@ -2,7 +2,7 @@
 
 echo "Updating production secrets in Cloudflare..."
 echo ""
-echo "This will update your existing secrets with new values."
+echo "This will prompt you to enter new values for your secrets."
 echo ""
 
 # First, delete the existing secrets
@@ -16,11 +16,11 @@ sleep 2
 # Set the new secrets
 echo ""
 echo "Setting new ADMIN_PASSWORD..."
-echo "Chevy9-Embellish-Senator" | wrangler secret put ADMIN_PASSWORD --env=""
+wrangler secret put ADMIN_PASSWORD --env=""
 
 echo ""
 echo "Setting new DEFAULT_API_KEY..."
-echo "tm-sk-cdce04b1-a7be-4368-9a59-1971ada0b156" | wrangler secret put DEFAULT_API_KEY --env=""
+wrangler secret put DEFAULT_API_KEY --env=""
 
 echo ""
 echo "✅ Secrets have been updated!"

@@ -15,6 +15,7 @@
         theme: {},
         agentName: 'Chat Support',
         width: 380,
+        height: null, // null means use CSS default
         embedMode: 'popup',
         container: null,
         ...config
@@ -24,7 +25,8 @@
       this.explicitConfig = {
         embedMode: config.embedMode || null,
         position: config.position || null,
-        width: config.width || null
+        width: config.width || null,
+        height: config.height || null
       };
       
       // Require instanceId
@@ -197,6 +199,14 @@
       if (this.config.width) {
         root.setProperty('--tm-window-width', this.config.width + 'px');
       }
+      
+      // Apply height configuration for inline mode
+      if (this.config.height && this.config.embedMode === 'inline') {
+        const height = typeof this.config.height === 'number' 
+          ? this.config.height + 'px' 
+          : this.config.height;
+        root.setProperty('--tm-inline-height', height);
+      }
     }
     
     updatePositionClasses() {
@@ -223,7 +233,14 @@
       this.elements.window.style.transform = 'none';
       this.elements.window.style.position = 'relative';
       this.elements.window.style.width = '100%';
-      this.elements.window.style.height = '100%';
+      
+      // Apply custom height if specified
+      if (this.config.height) {
+        const height = typeof this.config.height === 'number' 
+          ? this.config.height + 'px' 
+          : this.config.height;
+        this.elements.window.style.height = height;
+      }
       
       // Focus the input
       if (this.elements.input) {

@@ -3,6 +3,9 @@ main = "worker.js"
 compatibility_date = "2024-01-01"
 account_id = "0460574641fdbb98159c98ebf593e2bd"
 
+[assets]
+directory = "./assets"
+
 [vars]
 TYPINGMIND_API_HOST = "https://api.typingmind.com"
 

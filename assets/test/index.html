@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Widget Test Pages - TypingMind Chatbot</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; padding: 40px; background: #f5f5f5; }
+    .container { max-width: 800px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    h1 { color: #333; margin-bottom: 10px; }
+    .subtitle { color: #666; margin-bottom: 30px; }
+    .test-list { list-style: none; padding: 0; }
+    .test-item { margin: 20px 0; padding: 20px; background: #f8f9fa; border-radius: 6px; border: 1px solid #e9ecef; }
+    .test-item h3 { margin-top: 0; color: #333; }
+    .test-item p { color: #666; margin: 10px 0; }
+    .test-link { display: inline-block; background: #007bff; color: white; padding: 10px 20px; border-radius: 4px; text-decoration: none; }
+    .test-link:hover { background: #0056b3; }
+    .badge { display: inline-block; padding: 3px 8px; border-radius: 3px; font-size: 12px; font-weight: 500; margin-left: 10px; }
+    .badge.interactive { background: #28a745; color: white; }
+    .badge.automated { background: #17a2b8; color: white; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>TypingMind Widget Test Pages</h1>
+    <p class="subtitle">Test the widget functionality with different configurations and scenarios</p>
+    
+    <ul class="test-list">
+      <li class="test-item">
+        <h3>Comprehensive Widget Test <span class="badge interactive">Interactive</span></h3>
+        <p>Test multiple widget scenarios including valid instances, error handling, and inline mode.</p>
+        <a href="/test/comprehensive" class="test-link">Open Test</a>
+      </li>
+      
+      <li class="test-item">
+        <h3>Automated Test Suite <span class="badge automated">Automated</span></h3>
+        <p>Run automated tests that verify widget loading, initialization, and lifecycle.</p>
+        <a href="/test/automated" class="test-link">Run Tests</a>
+      </li>
+      
+      <li class="test-item">
+        <h3>Production Embed Test <span class="badge interactive">Interactive</span></h3>
+        <p>Test the exact embed code that users will use on their websites.</p>
+        <a href="/test/embed" class="test-link">Open Test</a>
+      </li>
+      
+      <li class="test-item">
+        <h3>Height Configuration Test <span class="badge interactive">Interactive</span></h3>
+        <p>Test various height configurations for inline mode widgets.</p>
+        <a href="/test/height-test" class="test-link">Open Test</a>
+      </li>
+    </ul>
+    
+    <div style="margin-top: 40px; padding: 20px; background: #f8f9fa; border-radius: 6px;">
+      <h4 style="margin-top: 0;">Widget URLs</h4>
+      <p><strong>Production Widget:</strong> <code>https://typingmind-chatbot.webfonts.workers.dev/widget.js</code></p>
+      <p><strong>Test Instances:</strong></p>
+      <ul>
+        <li><code>seo-assistant</code> - SEO Assistant Bot (popup mode)</li>
+        <li><code>support-bot</code> - Customer Support Bot (inline mode)</li>
+      </ul>
+    </div>
+  </div>
+</body>
+</html>

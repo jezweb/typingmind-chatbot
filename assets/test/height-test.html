@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Widget Height Configuration Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin-bottom: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .test-section h2 {
+            margin-top: 0;
+            color: #007bff;
+        }
+        .code-block {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            margin: 15px 0;
+            overflow-x: auto;
+        }
+        .chat-container {
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            margin-top: 20px;
+            background: white;
+        }
+        /* Different container styles for testing */
+        .container-default {
+            /* No height set - widget should use its default 600px */
+        }
+        .container-400 {
+            height: 400px;
+        }
+        .container-800 {
+            height: 800px;
+        }
+        .note {
+            background: #e3f2fd;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            color: #1565c0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>TypingMind Widget Height Configuration Test</h1>
+        
+        <div class="test-section">
+            <h2>Test 1: Default Height (600px)</h2>
+            <p>No height specified in configuration - should use CSS default of 600px</p>
+            <div class="code-block">
+TypingMindChat.init({
+    instanceId: 'support-bot',
+    container: document.getElementById('chat1'),
+    embedMode: 'inline'
+});
+            </div>
+            <div id="chat1" class="chat-container container-default"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>Test 2: Custom Height (450px)</h2>
+            <p>Height explicitly set to 450 pixels</p>
+            <div class="code-block">
+TypingMindChat.init({
+    instanceId: 'support-bot',
+    container: document.getElementById('chat2'),
+    embedMode: 'inline',
+    height: 450
+});
+            </div>
+            <div id="chat2" class="chat-container container-default"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>Test 3: Percentage Height (80%)</h2>
+            <p>Height set to 80% - container has 500px height, so widget should be 400px</p>
+            <div class="code-block">
+TypingMindChat.init({
+    instanceId: 'support-bot',
+    container: document.getElementById('chat3'),
+    embedMode: 'inline',
+    height: '80%'
+});
+            </div>
+            <div id="chat3" class="chat-container" style="height: 500px;"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>Test 4: Container Constrained (400px container)</h2>
+            <p>No height in config, but container is 400px - widget should fit within</p>
+            <div class="code-block">
+TypingMindChat.init({
+    instanceId: 'support-bot',
+    container: document.getElementById('chat4'),
+    embedMode: 'inline'
+});
+            </div>
+            <div id="chat4" class="chat-container container-400"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>Test 5: Large Custom Height (700px)</h2>
+            <p>Height set to 700px - taller than default</p>
+            <div class="code-block">
+TypingMindChat.init({
+    instanceId: 'support-bot',
+    container: document.getElementById('chat5'),
+    embedMode: 'inline',
+    height: 700
+});
+            </div>
+            <div id="chat5" class="chat-container container-default"></div>
+        </div>
+        
+        <div class="note">
+            <strong>Note:</strong> Send multiple messages in each chat to test the scrolling behavior. The messages area should scroll independently while the overall widget height remains fixed.
+        </div>
+    </div>
+
+    <script src="https://typingmind-chatbot.webfonts.workers.dev/widget.js"></script>
+    <script>
+        // Initialize all test widgets
+        window.addEventListener('load', function() {
+            // Test 1: Default height
+            TypingMindChat.init({
+                instanceId: 'support-bot',
+                container: document.getElementById('chat1'),
+                embedMode: 'inline'
+            });
+            
+            // Test 2: Custom height 450px
+            TypingMindChat.init({
+                instanceId: 'support-bot',
+                container: document.getElementById('chat2'),
+                embedMode: 'inline',
+                height: 450
+            });
+            
+            // Test 3: Percentage height
+            TypingMindChat.init({
+                instanceId: 'support-bot',
+                container: document.getElementById('chat3'),
+                embedMode: 'inline',
+                height: '80%'
+            });
+            
+            // Test 4: Container constrained
+            TypingMindChat.init({
+                instanceId: 'support-bot',
+                container: document.getElementById('chat4'),
+                embedMode: 'inline'
+            });
+            
+            // Test 5: Large custom height
+            TypingMindChat.init({
+                instanceId: 'support-bot',
+                container: document.getElementById('chat5'),
+                embedMode: 'inline',
+                height: 700
+            });
+            
+            console.log('All test widgets initialized');
+        });
+    </script>
+</body>
+</html>
