@@ -22,6 +22,17 @@ import {
   extractClientId,
   createRateLimitErrorResponse
 } from './lib/rate-limiter.js';
+import {
+  parseCookies,
+  validateAdminSession,
+  extractSessionId,
+  createAdminSession,
+  deleteAdminSession,
+  createLogoutCookie,
+  validatePassword,
+  createUnauthorizedRedirect,
+  createUnauthorizedResponse
+} from './lib/auth.js';
 
 const router = Router();
 
@@ -625,54 +636,34 @@ router.post('/admin/login', async (request, env) => {
   
   try {
     const { password } = await request.json();
-    const adminPassword = env.ADMIN_PASSWORD;
     
-    if (!adminPassword) {
-      console.error('[Admin] No admin password configured');
-      return new Response(JSON.stringify({ error: 'Admin not configured' }), {
-        status: 500,
+    if (!validatePassword(password, env.ADMIN_PASSWORD)) {
+      if (!env.ADMIN_PASSWORD) {
+        return new Response(JSON.stringify({ error: 'Admin not configured' }), {
+          status: 500,
+          headers: responseHeaders
+        });
+      }
+      
+      return new Response(JSON.stringify({ error: 'Invalid password' }), {
+        status: 401,
         headers: responseHeaders
       });
     }
     
-    if (password === adminPassword) {
-      // Generate secure session ID
-      const sessionId = crypto.randomUUID();
-      const sessionKey = `admin:session:${sessionId}`;
-      
-      // Store session in KV with 24 hour expiration
-      await env.ADMIN_SESSIONS.put(sessionKey, JSON.stringify({
-        createdAt: new Date().toISOString(),
-        ip: request.headers.get('CF-Connecting-IP') || 'unknown'
-      }), {
-        expirationTtl: 86400 // 24 hours
-      });
-      
-      // Set cookie with secure flags
-      const cookieOptions = [
-        `admin_session=${sessionId}`,
-        'HttpOnly',
-        'Secure',
-        'SameSite=Strict',
-        'Path=/',
-        `Max-Age=${86400}` // 24 hours
-      ].join('; ');
-      
-      return new Response(JSON.stringify({ 
-        success: true,
-        sessionId 
-      }), {
-        status: 200,
-        headers: {
-          ...responseHeaders,
-          'Set-Cookie': cookieOptions
-        }
-      });
-    }
+    // Create admin session
+    const clientIp = request.headers.get('CF-Connecting-IP');
+    const { sessionId, cookieOptions } = await createAdminSession(env, clientIp);
     
-    return new Response(JSON.stringify({ error: 'Invalid password' }), {
-      status: 401,
-      headers: responseHeaders
+    return new Response(JSON.stringify({ 
+      success: true,
+      sessionId 
+    }), {
+      status: 200,
+      headers: {
+        ...responseHeaders,
+        'Set-Cookie': cookieOptions
+      }
     });
   } catch (error) {
     console.error('[Admin] Login error:', error);
@@ -688,33 +679,14 @@ router.post('/admin/logout', async (request, env) => {
   const responseHeaders = createResponseHeaders();
   
   try {
-    // Get session ID from various sources
-    const authHeader = request.headers.get('Authorization');
-    let sessionId = authHeader?.replace('Bearer ', '') || 
-                   request.headers.get('X-Admin-Session');
-    
-    // If no session in headers, check cookies
-    if (!sessionId) {
-      const cookieHeader = request.headers.get('Cookie');
-      const cookies = parseCookies(cookieHeader);
-      sessionId = cookies['admin_session'];
-    }
+    // Extract session ID from request
+    const sessionId = extractSessionId(request);
     
     // Delete session from KV if found
-    if (sessionId) {
-      const sessionKey = `admin:session:${sessionId}`;
-      await env.ADMIN_SESSIONS.delete(sessionKey);
-    }
+    await deleteAdminSession(env, sessionId);
     
     // Clear cookie
-    const clearCookieOptions = [
-      'admin_session=',
-      'HttpOnly',
-      'Secure',
-      'SameSite=Strict',
-      'Path=/',
-      'Max-Age=0' // Expire immediately
-    ].join('; ');
+    const clearCookieOptions = createLogoutCookie();
     
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
@@ -732,54 +704,13 @@ router.post('/admin/logout', async (request, env) => {
   }
 });
 
-// Cookie parsing utility
-function parseCookies(cookieHeader) {
-  const cookies = {};
-  if (!cookieHeader) return cookies;
-  
-  cookieHeader.split(';').forEach(cookie => {
-    const [key, value] = cookie.trim().split('=');
-    if (key && value) {
-      cookies[key] = decodeURIComponent(value);
-    }
-  });
-  
-  return cookies;
-}
-
-// Admin session validation helper
-async function validateAdminSession(request, env) {
-  // Check for session in Authorization header, X-Admin-Session header, or cookie
-  const authHeader = request.headers.get('Authorization');
-  let sessionId = authHeader?.replace('Bearer ', '') || 
-                 request.headers.get('X-Admin-Session');
-  
-  // If no session in headers, check cookies
-  if (!sessionId) {
-    const cookieHeader = request.headers.get('Cookie');
-    const cookies = parseCookies(cookieHeader);
-    sessionId = cookies['admin_session'];
-  }
-  
-  if (!sessionId) {
-    return false;
-  }
-  
-  const sessionKey = `admin:session:${sessionId}`;
-  const session = await env.ADMIN_SESSIONS.get(sessionKey);
-  
-  return session !== null;
-}
 
 // Admin dashboard
 router.get('/admin/dashboard', async (request, env) => {
   // Validate session
   const isValid = await validateAdminSession(request, env);
   if (!isValid) {
-    return new Response(null, {
-      status: 302,
-      headers: { 'Location': '/admin' }
-    });
+    return createUnauthorizedRedirect();
   }
   
   // Get all instances from database with v2 schema
@@ -869,10 +800,7 @@ router.get('/admin/instances/new', async (request, env) => {
   // Validate session
   const isValid = await validateAdminSession(request, env);
   if (!isValid) {
-    return new Response(null, {
-      status: 302,
-      headers: { 'Location': '/admin' }
-    });
+    return createUnauthorizedRedirect();
   }
   
   const html = `<!DOCTYPE html>
@@ -1022,10 +950,7 @@ router.post('/admin/instances', async (request, env) => {
   // Validate session
   const isValid = await validateAdminSession(request, env);
   if (!isValid) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return createUnauthorizedResponse();
   }
   
   try {
@@ -1061,10 +986,7 @@ router.delete('/admin/instances/:id', async (request, env) => {
   // Validate session
   const isValid = await validateAdminSession(request, env);
   if (!isValid) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return createUnauthorizedResponse();
   }
   
   try {
@@ -1092,10 +1014,7 @@ router.get('/admin/instances/:id/edit', async (request, env) => {
   // Validate session
   const isValid = await validateAdminSession(request, env);
   if (!isValid) {
-    return new Response(null, {
-      status: 302,
-      headers: { 'Location': '/admin' }
-    });
+    return createUnauthorizedRedirect();
   }
   
   const { id } = request.params;
@@ -1238,10 +1157,7 @@ router.put('/admin/instances/:id', async (request, env) => {
   // Validate session
   const isValid = await validateAdminSession(request, env);
   if (!isValid) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return createUnauthorizedResponse();
   }
   
   try {
@@ -1270,10 +1186,7 @@ router.post('/admin/instances/:id/clone', async (request, env) => {
   // Validate session
   const isValid = await validateAdminSession(request, env);
   if (!isValid) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return createUnauthorizedResponse();
   }
   
   try {
