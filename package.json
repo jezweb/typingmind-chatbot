@@ -2,6 +2,7 @@
   "name": "typingmind-chatbot-platform",
   "version": "1.0.0",
   "description": "Multi-tenant embeddable chatbot platform powered by TypingMind API",
+  "type": "module",
   "main": "worker/index.js",
   "scripts": {
     "dev": "wrangler dev",
@@ -10,22 +11,29 @@
     "build:widget": "node widget/build.js",
     "deploy": "wrangler deploy",
     "deploy:widget": "npm run build:widget && node scripts/deploy-widget.js",
-    "test": "jest",
+    "test": "NODE_OPTIONS='--experimental-vm-modules' jest",
     "lint": "eslint .",
     "setup:kv": "node scripts/setup-kv.js",
     "config:push": "node scripts/push-config.js",
     "serve:demo": "npx http-server widget -p 8080 -o demo.html"
   },
-  "keywords": ["chatbot", "typingmind", "cloudflare-workers", "widget"],
+  "keywords": [
+    "chatbot",
+    "typingmind",
+    "cloudflare-workers",
+    "widget"
+  ],
   "author": "",
   "license": "MIT",
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20240117.0",
+    "@jest/globals": "^30.0.5",
     "eslint": "^8.56.0",
+    "http-server": "^14.1.1",
     "jest": "^29.7.0",
-    "wrangler": "^3.0.0",
+    "jest-environment-node": "^30.0.5",
     "uglify-js": "^3.17.4",
-    "http-server": "^14.1.1"
+    "wrangler": "^3.0.0"
   },
   "dependencies": {
     "itty-router": "^4.0.0"

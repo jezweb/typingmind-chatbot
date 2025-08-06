@@ -1,24 +1,14 @@
 import { Router } from 'itty-router';
+import { 
+  corsHeaders, 
+  securityHeaders, 
+  validateInstanceId, 
+  validateDomain,
+  createResponseHeaders,
+  handleCORSPreflight
+} from './lib/security.js';
 
 const router = Router();
-
-// CORS headers
-const corsHeaders = {
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Accept, Origin',
-  'Access-Control-Max-Age': '86400',
-  'Access-Control-Allow-Credentials': 'true'
-};
-
-// Security headers
-const securityHeaders = {
-  'X-Content-Type-Options': 'nosniff',
-  'X-Frame-Options': 'DENY',
-  'X-XSS-Protection': '1; mode=block',
-  'Referrer-Policy': 'strict-origin-when-cross-origin',
-  'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'",
-  'Strict-Transport-Security': 'max-age=31536000; includeSubDomains'
-};
 
 // Get instance configuration from D1
 async function getInstanceConfig(db, instanceId) {
@@ -73,11 +63,6 @@ async function getInstanceConfig(db, instanceId) {
   };
 }
 
-// Validate instance ID format
-function validateInstanceId(instanceId) {
-  // Only allow lowercase letters, numbers, and hyphens
-  return /^[a-z0-9-]+$/.test(instanceId);
-}
 
 // Rate limiting implementation
 async function checkAndUpdateRateLimit(env, options) {
@@ -136,100 +121,21 @@ async function checkAndUpdateRateLimit(env, options) {
   };
 }
 
-// Enhanced domain validation with better debugging
-async function validateDomain(request, instanceConfig) {
-  const origin = request.headers.get('Origin');
-  const referer = request.headers.get('Referer');
-  const requestHost = request.headers.get('Host');
-  
-  // Debug logging
-  console.log('[validateDomain] Headers:', {
-    origin,
-    referer,
-    host: requestHost,
-    method: request.method,
-    url: request.url
-  });
-  
-  // For same-origin requests (like test pages), check if the request is from the worker's own domain
-  if (!origin && !referer) {
-    // If no origin/referer but we have a host header, check if it's the same domain
-    if (requestHost) {
-      const workerUrl = new URL(request.url);
-      console.log('[validateDomain] Same-origin check:', {
-        requestHost,
-        workerHost: workerUrl.hostname
-      });
-      
-      // Allow requests from the same domain (like our test pages)
-      if (requestHost === workerUrl.hostname || 
-          requestHost.startsWith(workerUrl.hostname)) {
-        console.log('[validateDomain] Same-origin request allowed');
-        return true;
-      }
-    }
-    
-    console.log('[validateDomain] No origin/referer headers, rejecting');
-    return false;
-  }
-  
-  try {
-    const requestUrl = origin || referer;
-    const { hostname } = new URL(requestUrl);
-    
-    console.log('[validateDomain] Checking hostname:', hostname);
-    console.log('[validateDomain] Allowed domains:', instanceConfig.allowedDomains);
-    
-    const isAllowed = instanceConfig.allowedDomains.some(allowedDomain => {
-      // Allow wildcard * for all domains
-      if (allowedDomain === '*') {
-        console.log('[validateDomain] Wildcard * matched');
-        return true;
-      }
-      
-      if (allowedDomain.startsWith('*.')) {
-        const baseDomain = allowedDomain.substring(2);
-        const matches = hostname === baseDomain || hostname.endsWith(`.${baseDomain}`);
-        if (matches) {
-          console.log(`[validateDomain] Wildcard domain ${allowedDomain} matched`);
-        }
-        return matches;
-      }
-      
-      const exactMatch = hostname === allowedDomain;
-      if (exactMatch) {
-        console.log(`[validateDomain] Exact domain ${allowedDomain} matched`);
-      }
-      return exactMatch;
-    });
-    
-    console.log('[validateDomain] Final result:', isAllowed);
-    return isAllowed;
-  } catch (error) {
-    console.error('[validateDomain] Error:', error);
-    return false;
-  }
-}
 
 // Handle CORS preflight
 router.options('*', (request) => {
-  const origin = request.headers.get('Origin') || '*';
-  return new Response(null, {
-    headers: {
-      ...corsHeaders,
-      'Access-Control-Allow-Origin': origin
-    }
-  });
+  return handleCORSPreflight(request);
 });
 
 // Get instance info endpoint
 router.get('/instance/:id', async (request, env) => {
   const instanceId = request.params?.id;
+  const responseHeaders = createResponseHeaders();
   
   if (!instanceId) {
     return new Response(JSON.stringify({ error: 'Instance ID is required' }), {
       status: 400,
-      headers: { 'Content-Type': 'application/json' }
+      headers: responseHeaders
     });
   }
   
@@ -237,17 +143,9 @@ router.get('/instance/:id', async (request, env) => {
   if (!validateInstanceId(instanceId)) {
     return new Response(JSON.stringify({ error: 'Invalid instance ID format' }), {
       status: 400,
-      headers: { 'Content-Type': 'application/json' }
+      headers: responseHeaders
     });
   }
-  
-  const responseHeaders = {
-    'Content-Type': 'application/json',
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    ...securityHeaders
-  };
   
   try {
     const instance = await getInstanceConfig(env.DB, instanceId);
@@ -280,12 +178,7 @@ router.get('/instance/:id', async (request, env) => {
 // Chat endpoint
 router.post('/chat', async (request, env) => {
   const origin = request.headers.get('Origin') || '*';
-  const responseHeaders = {
-    'Content-Type': 'application/json',
-    ...corsHeaders,
-    'Access-Control-Allow-Origin': origin,
-    ...securityHeaders
-  };
+  const responseHeaders = createResponseHeaders(origin);
   
   try {
     // Check Content-Length header for request size limit (1MB)
@@ -835,10 +728,7 @@ router.get('/admin', () => {
 
 // Admin login endpoint
 router.post('/admin/login', async (request, env) => {
-  const responseHeaders = {
-    'Content-Type': 'application/json',
-    ...securityHeaders
-  };
+  const responseHeaders = createResponseHeaders();
   
   try {
     const { password } = await request.json();
@@ -902,10 +792,7 @@ router.post('/admin/login', async (request, env) => {
 
 // Admin logout endpoint
 router.post('/admin/logout', async (request, env) => {
-  const responseHeaders = {
-    'Content-Type': 'application/json',
-    ...securityHeaders
-  };
+  const responseHeaders = createResponseHeaders();
   
   try {
     // Get session ID from various sources
