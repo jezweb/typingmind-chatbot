@@ -153,14 +153,15 @@ Web-based admin interface for managing instances:
 - **Configuration**: Domain restrictions, rate limits, features, themes
 - **Widget Generation**: Copy-paste code with instance configuration
 - **Clone Functionality**: Duplicate instances with custom settings
+- **Full-Width Layout**: Dashboard utilizes full screen width for better data visibility
 
 Admin panel routes:
 - `/admin` - Login page
-- `/admin/dashboard` - Main instance list
+- `/admin/dashboard` - Main instance list (full-width layout)
 - `/admin/instances/new` - Create new instance
 - `/admin/instances/:id/edit` - Edit existing instance
 
-The admin panel uses external JavaScript (`/admin/admin.js`) to avoid template literal issues and improve maintainability.
+The admin panel uses external JavaScript (`/admin/admin.js`) to avoid template literal issues and improve maintainability. The dashboard layout uses full screen width for better utilization of wide screens, while form pages maintain constrained width for readability.
 
 ## Security Architecture
 

@@ -417,4 +417,4 @@ Test pages are automatically deployed with the worker as static assets in the `a
 
 See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
 
-Current version: **2.2.0** (Added height configuration for inline widgets)
+Current version: **2.2.1** (Admin dashboard full width layout)

@@ -5,6 +5,27 @@ All notable changes to the TypingMind Multi-Instance Chatbot Platform will be do
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.1] - 2025-08-06
+
+### 🔧 Changed
+- **Admin dashboard layout** - Removed max-width constraint to allow full screen width usage
+- **Table display** - Instance list table now expands to use full available width
+
+### 💅 Improved
+- **Screen utilization** - Better use of wide screens for admin dashboard
+- **Data visibility** - More horizontal space for instance information display
+
+## [2.2.0] - 2025-08-05
+
+### 🎯 Added
+- **Height configuration for inline widgets** - Flexible height options for embedded chat widgets
+- **Percentage-based heights** - Support for responsive height values (e.g., '80%')
+- **Container-aware sizing** - Widget respects parent container height constraints
+
+### 📚 Documentation
+- Added height configuration examples to widget documentation
+- Updated inline mode documentation with sizing options
+
 ## [2.1.1] - 2025-08-05
 
 ### 🐛 Fixed
@@ -265,6 +286,8 @@ wrangler d1 execute typingmind-chatbot-db --file=schema.sql --remote
 
 ## Version History Summary
 
+- **2.2.1** - Admin dashboard full width layout
+- **2.2.0** - Height configuration for inline widgets
 - **2.1.1** - Widget deployment fix, removed agentId backward compatibility
 - **2.1.0** - Admin panel implementation, security enhancements
 - **2.0.0** - Multi-instance architecture (breaking changes)

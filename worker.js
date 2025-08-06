@@ -1040,7 +1040,7 @@ router.get('/admin/dashboard', async (request, env) => {
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; background: #f5f5f5; }
     .header { background: white; padding: 1rem 2rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
     .header h1 { margin: 0; color: #333; }
-    .container { padding: 2rem; max-width: 1200px; margin: 0 auto; }
+    .container { padding: 2rem; }
     .actions { margin-bottom: 2rem; }
     .btn { padding: 0.5rem 1rem; border: none; border-radius: 4px; cursor: pointer; text-decoration: none; display: inline-block; }
     .btn-primary { background: #007bff; color: white; }
