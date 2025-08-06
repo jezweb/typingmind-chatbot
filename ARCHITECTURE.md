@@ -123,6 +123,9 @@ The worker serves as the API gateway and handles request routing. As part of the
 - **lib/routes/widget.js**: Widget delivery endpoint (/widget.js)
 - **lib/routes/admin.js**: Admin panel routes (login, dashboard, JS delivery)
 - **lib/routes/admin-crud.js**: Admin CRUD operations (create, edit, delete, clone)
+- **lib/templates/admin-layout.js**: Base layouts for admin pages and forms
+- **lib/templates/admin-pages.js**: Login and dashboard page templates
+- **lib/templates/admin-forms.js**: Create and edit instance form templates
 - **worker.js**: Main router with minimal logic, imports and uses route handlers
 
 #### Core Responsibilities:
@@ -631,10 +634,23 @@ As of 2025-08-06, the codebase is undergoing modularization to improve maintaina
   - Delete instance endpoint (DELETE /admin/instances/:id)
   - Clone instance endpoint (POST /admin/instances/:id/clone)
 
+- **lib/templates/admin-layout.js** - Admin HTML layout templates
+  - Base admin page layout (adminLayout)
+  - Form page layout (formLayout)
+  - Reusable styling and structure
+
+- **lib/templates/admin-pages.js** - Admin page templates
+  - Login page template (loginPage)
+  - Dashboard page template (dashboardPage)
+  - Instance list rendering
+
+- **lib/templates/admin-forms.js** - Admin form templates
+  - Create instance form (createInstanceForm)
+  - Edit instance form (editInstanceForm)
+  - Form field generation and validation
+
 ### Planned Modules
-- **templates/** - HTML templates
-  - Admin panel templates
-  - Layout components
+None - modularization complete
 
 ### Testing Infrastructure
 - Jest configured for ES modules

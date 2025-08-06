@@ -14,7 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Rate limiting module extraction** - Moved rate limiting logic to lib/rate-limiter.js (Phase 3)
 - **Auth module extraction** - Moved admin authentication and session management to lib/auth.js (Phase 4)
 - **Route modules extraction** - Moved all route handlers to lib/routes/*.js (Phase 5)
+- **Admin templates extraction** - Moved HTML generation to lib/templates/*.js (Phase 6)
 - **Worker size reduction** - Reduced worker.js from 1,707 to 72 lines (1,635 lines total reduction, 95.8% reduction)
+- **Admin route simplification** - Reduced admin.js from 485 to 340 lines, admin-crud.js from 477 to 149 lines
 
 ### 🎯 Added
 - **ES modules support** - Configured project to use ES modules throughout
@@ -24,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Auth module tests** - Comprehensive test suite for authentication (26 tests)
 - **Chat routes tests** - Comprehensive test suite for chat endpoints (16 tests)
 - **Widget routes tests** - Test suite for widget delivery (3 tests)
+- **Template module tests** - Test suites for admin templates (20 tests total)
 - **Jest configuration** - Set up Jest for ES module testing
 
 ### 📁 Project Structure
@@ -43,6 +46,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `lib/routes/widget.test.js` with tests
 - Added `lib/routes/admin.js` with admin panel routes
 - Added `lib/routes/admin-crud.js` with admin CRUD operations
+- Created `lib/templates/` directory for HTML templates
+- Added `lib/templates/admin-layout.js` with base layout templates
+- Added `lib/templates/admin-layout.test.js` with tests
+- Added `lib/templates/admin-pages.js` with page templates
+- Added `lib/templates/admin-pages.test.js` with tests
+- Added `lib/templates/admin-forms.js` with form templates
+- Added `lib/templates/admin-forms.test.js` with tests
 - Added `jest.config.js` for test configuration
 
 ## [2.2.1] - 2025-08-06
