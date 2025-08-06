@@ -112,18 +112,24 @@ CREATE TABLE instance_themes (
 
 ### 1. Cloudflare Worker (worker.js)
 
-The worker serves as the API gateway and handles:
+The worker serves as the API gateway and handles request routing. As part of the ongoing refactoring (started 2025-08-06), the worker is being modularized:
 
+#### Current Modules:
+- **lib/security.js**: CORS headers, security headers, domain validation, instance ID validation
+- **worker.js**: Main router and endpoint handlers (being refactored)
+
+#### Core Responsibilities:
 - **Instance Resolution**: Maps instance IDs to TypingMind agent IDs
-- **Domain Validation**: Ensures requests come from authorized domains
+- **Domain Validation**: Ensures requests come from authorized domains (via security module)
 - **API Proxying**: Forwards chat requests to TypingMind API
 - **Widget Delivery**: Serves the chat widget from KV storage
-- **CORS Management**: Handles cross-origin requests
+- **CORS Management**: Handles cross-origin requests (via security module)
 
 Key endpoints:
 - `GET /instance/:id` - Get instance configuration
 - `POST /chat` - Handle chat messages
 - `GET /widget.js` - Serve the widget code
+- `/admin/*` - Admin panel routes
 
 ### 2. Widget (widget/src/widget.js)
 
@@ -551,6 +557,43 @@ wrangler d1 execute typingmind-chatbot-db --command="SELECT * FROM agent_instanc
 wrangler d1 execute typingmind-chatbot-db --file=migration.sql --remote
 ```
 
+## Modular Architecture (Refactoring in Progress)
+
+As of 2025-08-06, the codebase is undergoing modularization to improve maintainability and testability:
+
+### Completed Modules
+- **lib/security.js** - Security and validation utilities
+  - CORS and security header configurations
+  - Domain validation with wildcard support
+  - Instance ID format validation
+  - Response header creation utilities
+  - CORS preflight handling
+
+### Planned Modules
+- **lib/database/** - Database access layer
+  - Instance configuration queries
+  - D1 database models
+  - Query builders
+- **lib/rate-limiter.js** - Rate limiting logic
+  - KV-based rate limit tracking
+  - Per-instance and per-session limits
+- **lib/auth/** - Authentication utilities
+  - Admin session management
+  - Cookie handling
+  - Password validation
+- **routes/** - Modular route handlers
+  - chat.js - Chat API endpoints
+  - admin/ - Admin panel routes
+  - widget.js - Widget delivery
+- **templates/** - HTML templates
+  - Admin panel templates
+  - Layout components
+
+### Testing Infrastructure
+- Jest configured for ES modules
+- Unit tests for each module
+- Integration test suite planned
+
 ## Conclusion
 
-This architecture provides a scalable, secure, and flexible platform for deploying multiple TypingMind chatbots across different domains with centralized configuration management. The multi-instance design allows for easy scaling while maintaining security through domain validation and rate limiting.
+This architecture provides a scalable, secure, and flexible platform for deploying multiple TypingMind chatbots across different domains with centralized configuration management. The multi-instance design allows for easy scaling while maintaining security through domain validation and rate limiting. The ongoing modularization effort will further improve code quality and maintainability.
