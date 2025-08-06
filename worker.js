@@ -16,66 +16,14 @@ import {
   deleteInstance,
   cloneInstance
 } from './lib/database.js';
+import {
+  checkAndUpdateRateLimit,
+  generateRateLimitKeys,
+  extractClientId,
+  createRateLimitErrorResponse
+} from './lib/rate-limiter.js';
 
 const router = Router();
-
-
-// Rate limiting implementation
-async function checkAndUpdateRateLimit(env, options) {
-  const { hourlyKey, sessionKey, hourlyLimit, sessionLimit, sessionId } = options;
-  
-  // Get current counts
-  const [hourlyCount, sessionCount] = await Promise.all([
-    env.RATE_LIMITS.get(hourlyKey),
-    sessionId ? env.RATE_LIMITS.get(sessionKey) : null
-  ]);
-  
-  const currentHourlyCount = parseInt(hourlyCount || '0');
-  const currentSessionCount = parseInt(sessionCount || '0');
-  
-  // Check hourly limit
-  if (currentHourlyCount >= hourlyLimit) {
-    const hourlyTTL = await env.RATE_LIMITS.getWithMetadata(hourlyKey);
-    const retryAfter = hourlyTTL.metadata?.ttl || 3600;
-    return {
-      allowed: false,
-      message: `Hourly rate limit exceeded. Maximum ${hourlyLimit} messages per hour.`,
-      retryAfter
-    };
-  }
-  
-  // Check session limit if applicable
-  if (sessionId && currentSessionCount >= sessionLimit) {
-    return {
-      allowed: false,
-      message: `Session rate limit exceeded. Maximum ${sessionLimit} messages per session.`,
-      retryAfter: 300 // 5 minutes
-    };
-  }
-  
-  // Update counts with TTL
-  const promises = [
-    env.RATE_LIMITS.put(hourlyKey, String(currentHourlyCount + 1), {
-      expirationTtl: 3600 // 1 hour
-    })
-  ];
-  
-  if (sessionId) {
-    promises.push(
-      env.RATE_LIMITS.put(sessionKey, String(currentSessionCount + 1), {
-        expirationTtl: 86400 // 24 hours
-      })
-    );
-  }
-  
-  await Promise.all(promises);
-  
-  return {
-    allowed: true,
-    currentHourlyCount: currentHourlyCount + 1,
-    currentSessionCount: currentSessionCount + 1
-  };
-}
 
 
 // Handle CORS preflight
@@ -235,12 +183,11 @@ router.post('/chat', async (request, env) => {
     });
     
     // Implement rate limiting
-    const clientId = sessionId || request.headers.get('CF-Connecting-IP') || 'anonymous';
-    const hourlyKey = `rate:hour:${instanceId}:${clientId}`;
-    const sessionKey = `rate:session:${instanceId}:${sessionId}`;
+    const clientId = extractClientId(request, sessionId);
+    const { hourlyKey, sessionKey } = generateRateLimitKeys(instanceId, clientId, sessionId);
     
     // Check rate limits
-    const rateLimitResult = await checkAndUpdateRateLimit(env, {
+    const rateLimitResult = await checkAndUpdateRateLimit(env.RATE_LIMITS, {
       hourlyKey,
       sessionKey,
       hourlyLimit: instanceConfig.rateLimit.messagesPerHour,
@@ -249,17 +196,7 @@ router.post('/chat', async (request, env) => {
     });
     
     if (!rateLimitResult.allowed) {
-      return new Response(JSON.stringify({ 
-        error: 'Rate limit exceeded',
-        message: rateLimitResult.message,
-        retryAfter: rateLimitResult.retryAfter
-      }), {
-        status: 429,
-        headers: {
-          ...responseHeaders,
-          'Retry-After': String(rateLimitResult.retryAfter || 3600)
-        }
-      });
+      return createRateLimitErrorResponse(rateLimitResult, responseHeaders);
     }
     
     // Call TypingMind API with the actual agent ID
