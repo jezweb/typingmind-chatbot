@@ -116,6 +116,7 @@ The worker serves as the API gateway and handles request routing. As part of the
 
 #### Current Modules:
 - **lib/security.js**: CORS headers, security headers, domain validation, instance ID validation
+- **lib/database.js**: D1 database operations, instance CRUD operations, configuration queries
 - **worker.js**: Main router and endpoint handlers (being refactored)
 
 #### Core Responsibilities:
@@ -569,11 +570,14 @@ As of 2025-08-06, the codebase is undergoing modularization to improve maintaina
   - Response header creation utilities
   - CORS preflight handling
 
+- **lib/database.js** - Database access layer
+  - Instance configuration queries (getInstanceConfig)
+  - CRUD operations for instances
+  - Batch operations for related tables
+  - Clone functionality
+  - Transaction management
+
 ### Planned Modules
-- **lib/database/** - Database access layer
-  - Instance configuration queries
-  - D1 database models
-  - Query builders
 - **lib/rate-limiter.js** - Rate limiting logic
   - KV-based rate limit tracking
   - Per-instance and per-session limits

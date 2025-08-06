@@ -9,17 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🔧 Changed
 - **Worker modularization** - Started refactoring worker.js into modular components
-- **Security module extraction** - Moved CORS, security headers, and validation to lib/security.js
+- **Security module extraction** - Moved CORS, security headers, and validation to lib/security.js (Phase 1)
+- **Database module extraction** - Moved all D1 database operations to lib/database.js (Phase 2)
+- **Worker size reduction** - Reduced worker.js from 1,707 to 1,390 lines (317 lines total reduction)
 
 ### 🎯 Added
 - **ES modules support** - Configured project to use ES modules throughout
 - **Security module tests** - Comprehensive test suite for security functions (13 tests)
+- **Database module tests** - Comprehensive test suite for database operations (12 tests)
 - **Jest configuration** - Set up Jest for ES module testing
 
 ### 📁 Project Structure
 - Created `lib/` directory for shared modules
 - Added `lib/security.js` with all security-related functions
 - Added `lib/security.test.js` with comprehensive tests
+- Added `lib/database.js` with all D1 database operations
+- Added `lib/database.test.js` with comprehensive tests
 - Added `jest.config.js` for test configuration
 
 ## [2.2.1] - 2025-08-06
