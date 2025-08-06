@@ -118,6 +118,7 @@ The worker serves as the API gateway and handles request routing. As part of the
 - **lib/security.js**: CORS headers, security headers, domain validation, instance ID validation
 - **lib/database.js**: D1 database operations, instance CRUD operations, configuration queries
 - **lib/rate-limiter.js**: KV-based rate limiting, per-instance and per-session limits
+- **lib/auth.js**: Admin authentication, session management, cookie handling
 - **worker.js**: Main router and endpoint handlers (being refactored)
 
 #### Core Responsibilities:
@@ -587,11 +588,15 @@ As of 2025-08-06, the codebase is undergoing modularization to improve maintaina
   - Error response creation with Retry-After headers
   - Status checking without incrementing counts
 
-### Planned Modules
-- **lib/auth/** - Authentication utilities
-  - Admin session management
-  - Cookie handling
+- **lib/auth.js** - Authentication utilities
+  - Admin session management with KV storage
+  - Cookie parsing and creation
+  - Session ID extraction from headers or cookies
   - Password validation
+  - Session creation and deletion
+  - Unauthorized response helpers
+
+### Planned Modules
 - **routes/** - Modular route handlers
   - chat.js - Chat API endpoints
   - admin/ - Admin panel routes
