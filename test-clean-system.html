@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clean Multi-Instance Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        code {
+            background: #f5f5f5;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+        .inline-container {
+            height: 500px;
+            width: 100%;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        .error {
+            color: #d32f2f;
+            background: #ffebee;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        .success {
+            color: #388e3c;
+            background: #e8f5e9;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Clean Multi-Instance System Test</h1>
+        
+        <div class="test-section">
+            <h2>System Status</h2>
+            <div class="info">
+                <p><strong>Architecture:</strong> Multi-Instance (No Backward Compatibility)</p>
+                <p><strong>Requirement:</strong> All widgets must use <code>instanceId</code></p>
+                <p><strong>Available Instances:</strong></p>
+                <ul>
+                    <li><code>seo-assistant</code> - SEO Assistant Bot</li>
+                    <li><code>support-bot</code> - Customer Support Bot (inline mode)</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>Popup Mode Test</h2>
+            <p>Click the button in the bottom-right corner to test the popup mode widget.</p>
+            <div id="popup-status"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>Inline Mode Test</h2>
+            <p>The support bot should appear inline below:</p>
+            <div id="inline-status"></div>
+            <div id="inline-container" class="inline-container"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>Widget Usage</h2>
+            <pre><code>// Popup Mode
+TypingMindChat.init({
+    instanceId: 'seo-assistant'
+});
+
+// Inline Mode
+TypingMindChat.init({
+    instanceId: 'support-bot',
+    container: document.getElementById('container'),
+    embedMode: 'inline'
+});</code></pre>
+        </div>
+    </div>
+
+    <script src="https://typingmind-chatbot.webfonts.workers.dev/widget.js"></script>
+    <script>
+        // Test popup mode
+        try {
+            const popupWidget = TypingMindChat.init({
+                instanceId: 'seo-assistant'
+            });
+            
+            if (popupWidget) {
+                document.getElementById('popup-status').innerHTML = 
+                    '<div class="success">✓ Popup widget initialized with instanceId</div>';
+            }
+        } catch (error) {
+            document.getElementById('popup-status').innerHTML = 
+                `<div class="error">✗ Popup Error: ${error.message}</div>`;
+        }
+
+        // Test inline mode
+        try {
+            const inlineWidget = TypingMindChat.init({
+                instanceId: 'support-bot',
+                container: document.getElementById('inline-container'),
+                embedMode: 'inline'
+            });
+            
+            if (inlineWidget) {
+                document.getElementById('inline-status').innerHTML = 
+                    '<div class="success">✓ Inline widget initialized with instanceId</div>';
+            }
+        } catch (error) {
+            document.getElementById('inline-status').innerHTML = 
+                `<div class="error">✗ Inline Error: ${error.message}</div>`;
+        }
+    </script>
+</body>
+</html>

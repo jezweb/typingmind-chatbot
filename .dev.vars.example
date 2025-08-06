@@ -1,0 +1,6 @@
+# Local development secrets
+# Copy this file to .dev.vars and fill in your actual values
+# DO NOT commit .dev.vars to version control
+
+ADMIN_PASSWORD = "your-secure-admin-password"
+DEFAULT_API_KEY = "your-typingmind-api-key"

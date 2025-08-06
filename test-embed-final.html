@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Final Embed Test - TypingMind Widget</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 40px;
+            background: #f0f0f0;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .section {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+        .code-block {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 500;
+            margin-left: 10px;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .test-content {
+            padding: 20px;
+            background: white;
+            border: 2px dashed #dee2e6;
+            border-radius: 8px;
+            margin: 20px 0;
+            min-height: 100px;
+            text-align: center;
+            color: #666;
+        }
+        .inline-container {
+            height: 500px;
+            border: 2px solid #007bff;
+            border-radius: 8px;
+            margin: 20px 0;
+            background: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>TypingMind Widget - Final Embed Test</h1>
+        <p class="subtitle">Testing the exact embed code that users will use on their websites</p>
+        
+        <div class="section">
+            <h2>Test 1: Popup Widget (seo-assistant)</h2>
+            <p>This test uses the exact embed code from the admin panel. Look for the chat button in the bottom-right corner.</p>
+            
+            <div class="code-block"><!-- TypingMind Chatbot Widget -->
+&lt;script&gt;
+  (function() {
+    var script = document.createElement('script');
+    script.src = 'https://typingmind-chatbot.webfonts.workers.dev/widget.js';
+    script.async = true;
+    script.onload = function() {
+      TypingMindChat.init({
+        instanceId: 'seo-assistant'
+      });
+    };
+    document.head.appendChild(script);
+  })();
+&lt;/script&gt;</div>
+            
+            <p>Status: <span id="popup-status" class="status">Loading...</span></p>
+        </div>
+        
+        <div class="section">
+            <h2>Test 2: Inline Widget (support-bot)</h2>
+            <p>This test embeds the widget inline within the page content.</p>
+            
+            <div class="code-block"><!-- TypingMind Chatbot Widget -->
+&lt;div id="chat-container" style="height: 500px;"&gt;&lt;/div&gt;
+&lt;script&gt;
+  (function() {
+    var script = document.createElement('script');
+    script.src = 'https://typingmind-chatbot.webfonts.workers.dev/widget.js';
+    script.async = true;
+    script.onload = function() {
+      TypingMindChat.init({
+        instanceId: 'support-bot',
+        container: document.getElementById('chat-container'),
+        embedMode: 'inline'
+      });
+    };
+    document.head.appendChild(script);
+  })();
+&lt;/script&gt;</div>
+            
+            <p>Status: <span id="inline-status" class="status">Loading...</span></p>
+            <div id="chat-container" class="inline-container"></div>
+        </div>
+        
+        <div class="section">
+            <h2>Test Content Area</h2>
+            <div class="test-content">
+                <p>This is example page content.</p>
+                <p>The popup widget should appear as a floating button.</p>
+                <p>The inline widget should be embedded above.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Test 1: Popup Widget - Exact embed code -->
+    <script>
+      (function() {
+        var script = document.createElement('script');
+        script.src = 'https://typingmind-chatbot.webfonts.workers.dev/widget.js';
+        script.async = true;
+        script.onload = function() {
+          try {
+            var widget = TypingMindChat.init({
+              instanceId: 'seo-assistant'
+            });
+            if (widget) {
+              document.getElementById('popup-status').textContent = 'Active';
+              document.getElementById('popup-status').className = 'status success';
+            } else {
+              throw new Error('Widget initialization failed');
+            }
+          } catch (error) {
+            document.getElementById('popup-status').textContent = 'Error: ' + error.message;
+            document.getElementById('popup-status').className = 'status error';
+          }
+        };
+        script.onerror = function() {
+          document.getElementById('popup-status').textContent = 'Failed to load widget script';
+          document.getElementById('popup-status').className = 'status error';
+        };
+        document.head.appendChild(script);
+      })();
+    </script>
+
+    <!-- Test 2: Inline Widget - With container -->
+    <script>
+      // Wait a bit to avoid conflicts
+      setTimeout(function() {
+        (function() {
+          // Check if widget is already loaded
+          if (window.TypingMindChat) {
+            try {
+              var widget = TypingMindChat.init({
+                instanceId: 'support-bot',
+                container: document.getElementById('chat-container'),
+                embedMode: 'inline'
+              });
+              if (widget) {
+                document.getElementById('inline-status').textContent = 'Active';
+                document.getElementById('inline-status').className = 'status success';
+              } else {
+                throw new Error('Widget initialization failed');
+              }
+            } catch (error) {
+              document.getElementById('inline-status').textContent = 'Error: ' + error.message;
+              document.getElementById('inline-status').className = 'status error';
+            }
+          } else {
+            document.getElementById('inline-status').textContent = 'Widget script not loaded';
+            document.getElementById('inline-status').className = 'status error';
+          }
+        })();
+      }, 2000);
+    </script>
+</body>
+</html>

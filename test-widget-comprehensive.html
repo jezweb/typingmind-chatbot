@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comprehensive Widget Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        .test-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .test-card h3 {
+            margin-top: 0;
+            color: #007bff;
+        }
+        .status {
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 14px;
+            margin: 10px 0;
+            font-weight: 500;
+        }
+        .status.pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .code-block {
+            background: #f4f4f4;
+            padding: 12px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+        .console-output {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 12px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            min-height: 50px;
+            max-height: 200px;
+            overflow-y: auto;
+            margin: 10px 0;
+        }
+        .console-error {
+            color: #f48771;
+        }
+        .console-log {
+            color: #d4d4d4;
+        }
+        .inline-container {
+            height: 500px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            margin-top: 20px;
+            background: white;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        .test-actions {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>TypingMind Widget Comprehensive Test</h1>
+        
+        <div class="test-grid">
+            <!-- Test 1: Basic Popup Widget -->
+            <div class="test-card">
+                <h3>Test 1: Basic Popup Widget</h3>
+                <p>Testing with valid instanceId 'seo-assistant'</p>
+                <div class="code-block">
+TypingMindChat.init({
+    instanceId: 'seo-assistant'
+});
+                </div>
+                <div id="test1-status" class="status pending">⏳ Pending...</div>
+                <div id="test1-console" class="console-output"></div>
+                <div class="test-actions">
+                    <button onclick="runTest1()">Run Test</button>
+                    <button onclick="openWidget1()" id="open1" disabled>Open Widget</button>
+                    <button onclick="destroyWidget1()" id="destroy1" disabled>Destroy</button>
+                </div>
+            </div>
+
+            <!-- Test 2: Inline Widget -->
+            <div class="test-card">
+                <h3>Test 2: Inline Widget</h3>
+                <p>Testing inline mode with 'support-bot'</p>
+                <div class="code-block">
+TypingMindChat.init({
+    instanceId: 'support-bot',
+    container: element,
+    embedMode: 'inline'
+});
+                </div>
+                <div id="test2-status" class="status pending">⏳ Pending...</div>
+                <div id="test2-console" class="console-output"></div>
+                <div class="test-actions">
+                    <button onclick="runTest2()">Run Test</button>
+                    <button onclick="destroyWidget2()" id="destroy2" disabled>Destroy</button>
+                </div>
+                <div id="inline-container" class="inline-container" style="display:none;"></div>
+            </div>
+
+            <!-- Test 3: Missing instanceId -->
+            <div class="test-card">
+                <h3>Test 3: Missing instanceId</h3>
+                <p>Should show error in console</p>
+                <div class="code-block">
+TypingMindChat.init({
+    // No instanceId provided
+});
+                </div>
+                <div id="test3-status" class="status pending">⏳ Pending...</div>
+                <div id="test3-console" class="console-output"></div>
+                <div class="test-actions">
+                    <button onclick="runTest3()">Run Test</button>
+                </div>
+            </div>
+
+            <!-- Test 4: Invalid instanceId -->
+            <div class="test-card">
+                <h3>Test 4: Invalid Instance ID</h3>
+                <p>Testing with non-existent instance</p>
+                <div class="code-block">
+TypingMindChat.init({
+    instanceId: 'invalid-instance-123'
+});
+                </div>
+                <div id="test4-status" class="status pending">⏳ Pending...</div>
+                <div id="test4-console" class="console-output"></div>
+                <div class="test-actions">
+                    <button onclick="runTest4()">Run Test</button>
+                </div>
+            </div>
+
+            <!-- Test 5: Legacy agentId (should fail) -->
+            <div class="test-card">
+                <h3>Test 5: Legacy agentId</h3>
+                <p>Should fail - no backward compatibility</p>
+                <div class="code-block">
+TypingMindChat.init({
+    agentId: 'seo-assistant'
+});
+                </div>
+                <div id="test5-status" class="status pending">⏳ Pending...</div>
+                <div id="test5-console" class="console-output"></div>
+                <div class="test-actions">
+                    <button onclick="runTest5()">Run Test</button>
+                </div>
+            </div>
+
+            <!-- Test 6: Widget Communication -->
+            <div class="test-card">
+                <h3>Test 6: Widget API Communication</h3>
+                <p>Testing actual chat functionality</p>
+                <div class="code-block">
+// Send a test message
+widget.sendMessage('Hello!');
+                </div>
+                <div id="test6-status" class="status pending">⏳ Pending...</div>
+                <div id="test6-console" class="console-output"></div>
+                <div class="test-actions">
+                    <button onclick="runTest6()">Run Test</button>
+                </div>
+            </div>
+        </div>
+
+        <h2>Console Log</h2>
+        <div id="global-console" class="console-output" style="height: 300px;"></div>
+    </div>
+
+    <script>
+        // Global variables for widget instances
+        let widget1 = null;
+        let widget2 = null;
+
+        // Console interceptor
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+
+        function logToConsole(elementId, message, type = 'log') {
+            const element = document.getElementById(elementId);
+            if (element) {
+                const timestamp = new Date().toLocaleTimeString();
+                const className = type === 'error' ? 'console-error' : 'console-log';
+                element.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+                element.scrollTop = element.scrollHeight;
+            }
+        }
+
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            const message = args.map(arg => 
+                typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+            ).join(' ');
+            logToConsole('global-console', message, 'log');
+        };
+
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            const message = args.map(arg => 
+                typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+            ).join(' ');
+            logToConsole('global-console', message, 'error');
+        };
+
+        console.warn = function(...args) {
+            originalWarn.apply(console, args);
+            const message = args.map(arg => 
+                typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+            ).join(' ');
+            logToConsole('global-console', message, 'warn');
+        };
+
+        // Test functions
+        function runTest1() {
+            document.getElementById('test1-status').className = 'status pending';
+            document.getElementById('test1-status').textContent = '⏳ Running...';
+            document.getElementById('test1-console').innerHTML = '';
+            
+            try {
+                widget1 = TypingMindChat.init({
+                    instanceId: 'seo-assistant'
+                });
+                
+                if (widget1) {
+                    logToConsole('test1-console', 'Widget initialized successfully!', 'log');
+                    document.getElementById('test1-status').className = 'status success';
+                    document.getElementById('test1-status').textContent = '✅ Success - Widget created';
+                    document.getElementById('open1').disabled = false;
+                    document.getElementById('destroy1').disabled = false;
+                } else {
+                    throw new Error('Widget initialization returned null');
+                }
+            } catch (error) {
+                logToConsole('test1-console', `Error: ${error.message}`, 'error');
+                document.getElementById('test1-status').className = 'status error';
+                document.getElementById('test1-status').textContent = '❌ Failed';
+            }
+        }
+
+        function openWidget1() {
+            if (widget1) {
+                TypingMindChat.open('seo-assistant');
+                logToConsole('test1-console', 'Widget opened', 'log');
+            }
+        }
+
+        function destroyWidget1() {
+            if (widget1) {
+                TypingMindChat.destroy('seo-assistant');
+                widget1 = null;
+                logToConsole('test1-console', 'Widget destroyed', 'log');
+                document.getElementById('open1').disabled = true;
+                document.getElementById('destroy1').disabled = true;
+            }
+        }
+
+        function runTest2() {
+            document.getElementById('test2-status').className = 'status pending';
+            document.getElementById('test2-status').textContent = '⏳ Running...';
+            document.getElementById('test2-console').innerHTML = '';
+            document.getElementById('inline-container').style.display = 'block';
+            
+            try {
+                widget2 = TypingMindChat.init({
+                    instanceId: 'support-bot',
+                    container: document.getElementById('inline-container'),
+                    embedMode: 'inline'
+                });
+                
+                if (widget2) {
+                    logToConsole('test2-console', 'Inline widget initialized successfully!', 'log');
+                    document.getElementById('test2-status').className = 'status success';
+                    document.getElementById('test2-status').textContent = '✅ Success - Inline widget created';
+                    document.getElementById('destroy2').disabled = false;
+                } else {
+                    throw new Error('Widget initialization returned null');
+                }
+            } catch (error) {
+                logToConsole('test2-console', `Error: ${error.message}`, 'error');
+                document.getElementById('test2-status').className = 'status error';
+                document.getElementById('test2-status').textContent = '❌ Failed';
+            }
+        }
+
+        function destroyWidget2() {
+            if (widget2) {
+                TypingMindChat.destroy('support-bot');
+                widget2 = null;
+                logToConsole('test2-console', 'Inline widget destroyed', 'log');
+                document.getElementById('destroy2').disabled = true;
+                document.getElementById('inline-container').style.display = 'none';
+            }
+        }
+
+        function runTest3() {
+            document.getElementById('test3-status').className = 'status pending';
+            document.getElementById('test3-status').textContent = '⏳ Running...';
+            document.getElementById('test3-console').innerHTML = '';
+            
+            try {
+                const widget = TypingMindChat.init({
+                    // No instanceId
+                });
+                
+                if (!widget) {
+                    logToConsole('test3-console', 'Widget correctly returned null', 'log');
+                    document.getElementById('test3-status').className = 'status success';
+                    document.getElementById('test3-status').textContent = '✅ Success - Correctly rejected';
+                }
+            } catch (error) {
+                logToConsole('test3-console', `Unexpected error: ${error.message}`, 'error');
+                document.getElementById('test3-status').className = 'status error';
+                document.getElementById('test3-status').textContent = '❌ Unexpected error';
+            }
+        }
+
+        function runTest4() {
+            document.getElementById('test4-status').className = 'status pending';
+            document.getElementById('test4-status').textContent = '⏳ Running...';
+            document.getElementById('test4-console').innerHTML = '';
+            
+            try {
+                const widget = TypingMindChat.init({
+                    instanceId: 'invalid-instance-123'
+                });
+                
+                if (widget) {
+                    logToConsole('test4-console', 'Widget created (will fail on API calls)', 'log');
+                    document.getElementById('test4-status').className = 'status success';
+                    document.getElementById('test4-status').textContent = '✅ Widget created';
+                    
+                    // Clean up
+                    setTimeout(() => {
+                        TypingMindChat.destroy('invalid-instance-123');
+                    }, 1000);
+                }
+            } catch (error) {
+                logToConsole('test4-console', `Error: ${error.message}`, 'error');
+                document.getElementById('test4-status').className = 'status error';
+                document.getElementById('test4-status').textContent = '❌ Failed';
+            }
+        }
+
+        function runTest5() {
+            document.getElementById('test5-status').className = 'status pending';
+            document.getElementById('test5-status').textContent = '⏳ Running...';
+            document.getElementById('test5-console').innerHTML = '';
+            
+            try {
+                const widget = TypingMindChat.init({
+                    agentId: 'seo-assistant'  // Using agentId instead of instanceId
+                });
+                
+                if (!widget) {
+                    logToConsole('test5-console', 'Widget correctly rejected agentId', 'log');
+                    document.getElementById('test5-status').className = 'status success';
+                    document.getElementById('test5-status').textContent = '✅ Success - No backward compatibility';
+                } else {
+                    logToConsole('test5-console', 'ERROR: Widget should not accept agentId!', 'error');
+                    document.getElementById('test5-status').className = 'status error';
+                    document.getElementById('test5-status').textContent = '❌ Failed - agentId accepted';
+                }
+            } catch (error) {
+                logToConsole('test5-console', `Error: ${error.message}`, 'error');
+                document.getElementById('test5-status').className = 'status error';
+                document.getElementById('test5-status').textContent = '❌ Error';
+            }
+        }
+
+        function runTest6() {
+            document.getElementById('test6-status').className = 'status pending';
+            document.getElementById('test6-status').textContent = '⏳ Running...';
+            document.getElementById('test6-console').innerHTML = '';
+            
+            logToConsole('test6-console', 'Creating widget for API test...', 'log');
+            
+            const testWidget = TypingMindChat.init({
+                instanceId: 'seo-assistant',
+                onMessage: (msg) => {
+                    logToConsole('test6-console', `Message received: ${msg.content}`, 'log');
+                },
+                onOpen: () => {
+                    logToConsole('test6-console', 'Widget opened', 'log');
+                },
+                onClose: () => {
+                    logToConsole('test6-console', 'Widget closed', 'log');
+                }
+            });
+            
+            if (testWidget) {
+                logToConsole('test6-console', 'Widget created with callbacks', 'log');
+                document.getElementById('test6-status').className = 'status success';
+                document.getElementById('test6-status').textContent = '✅ Success - Widget with callbacks';
+                
+                // Open the widget
+                setTimeout(() => {
+                    TypingMindChat.open('seo-assistant');
+                    logToConsole('test6-console', 'Opening widget to test interaction...', 'log');
+                }, 500);
+                
+                // Clean up after 5 seconds
+                setTimeout(() => {
+                    TypingMindChat.destroy('seo-assistant');
+                    logToConsole('test6-console', 'Test completed, widget destroyed', 'log');
+                }, 5000);
+            }
+        }
+    </script>
+
+    <!-- Load the widget -->
+    <script src="https://typingmind-chatbot.webfonts.workers.dev/widget.js"></script>
+    
+    <script>
+        // Log when widget script is loaded
+        console.log('TypingMind widget script loaded successfully');
+        console.log('Available methods:', Object.keys(window.TypingMindChat || {}));
+    </script>
+</body>
+</html>

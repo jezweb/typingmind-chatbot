@@ -1,17 +1,17 @@
 name = "typingmind-chatbot"
-main = "worker-d1.js"
+main = "worker.js"
 compatibility_date = "2024-01-01"
 account_id = "0460574641fdbb98159c98ebf593e2bd"
 
 [vars]
-ADMIN_PASSWORD = "Uptake-Skillful8-Spearman"
-DEFAULT_API_KEY = "tm-sk-cfac2ddb-f1a8-4c5f-a5c8-695aa758b96a"
 TYPINGMIND_API_HOST = "https://api.typingmind.com"
+
+# Secrets should be set via Cloudflare dashboard or wrangler secret command:
+# wrangler secret put ADMIN_PASSWORD
+# wrangler secret put DEFAULT_API_KEY
 
 [env.production]
 [env.production.vars]
-ADMIN_PASSWORD = "CHANGE_THIS_IN_CLOUDFLARE_DASHBOARD"
-DEFAULT_API_KEY = "tm-sk-cfac2ddb-f1a8-4c5f-a5c8-695aa758b96a"
 TYPINGMIND_API_HOST = "https://api.typingmind.com"
 
 [[kv_namespaces]]
@@ -38,5 +38,7 @@ database_id = "48c95c1c-4f72-4195-928b-eaaaa2746106"
 # Development overrides
 [env.development]
 [env.development.vars]
-ADMIN_PASSWORD = "Uptake-Skillful8-Spearman"
-DEFAULT_API_KEY = "tm-sk-cfac2ddb-f1a8-4c5f-a5c8-695aa758b96a"
+TYPINGMIND_API_HOST = "https://api.typingmind.com"
+# For local development, create .dev.vars file with:
+# ADMIN_PASSWORD = "your-dev-password"
+# DEFAULT_API_KEY = "your-dev-api-key"

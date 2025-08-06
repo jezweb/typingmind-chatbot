@@ -4,33 +4,43 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a multi-tenant TypingMind chatbot platform that allows embedding different AI agents on various websites with centralized management. The system provides:
-- Multiple chatbot deployments with different agents
+This is a multi-instance TypingMind chatbot platform that allows embedding different AI chatbot configurations on various websites with centralized management. The system provides:
+- Multiple chatbot instances with unique configurations
 - Domain-based access control
-- Administrative interface for configuration
-- Per-agent API key management
-- Analytics and monitoring
+- Per-instance settings (themes, rate limits, features)
+- No backward compatibility - clean architecture
+- Full admin panel for instance management
 
 ## Architecture
 
-The system follows an enhanced multi-tier architecture:
-1. **Frontend Widget**: Vanilla JavaScript with Shadow DOM isolation, multi-agent support, dual embed modes (popup/inline)
+The system follows a clean multi-instance architecture:
+
+1. **Frontend Widget**: Vanilla JavaScript with Shadow DOM isolation
+   - Instance-based configuration
+   - Dual embed modes (popup/inline)
+   - No legacy code
+
 2. **Cloudflare Workers**: 
    - API proxy with domain validation
-   - Admin panel for agent management
-   - D1 Database for agent configurations (replaced KV to avoid JSON parsing issues)
-   - KV storage for rate limits, analytics, and sessions
-   - Analytics collection
+   - Instance ID to TypingMind agent ID mapping
+   - D1 Database for instance configurations
+   - KV storage for widget code and future features
+
 3. **TypingMind API**: Multiple agents via v2/agents/{agent_id}/chat endpoint
+
+### Instance Architecture
+- **Instance ID**: Unique identifier for each chatbot deployment (e.g., `seo-assistant`)
+- **TypingMind Agent ID**: The actual agent ID in TypingMind's system
+- Multiple instances can point to the same TypingMind agent with different configurations
 
 ## Key Technical Decisions
 
-- **Multi-Tenant Design**: One platform supports multiple agents across different domains
+- **Multi-Instance Design**: Clean separation of instance IDs from TypingMind agent IDs
+- **No Backward Compatibility**: System requires `instanceId` for all operations
 - **Domain Restrictions**: Whitelist-based embedding control with wildcard support
-- **Admin Interface**: Web-based management without separate backend
-- **Per-Agent Configuration**: Individual API keys, rate limits, and features
-- **D1 Database**: Structured storage for agent configurations (replaced KV JSON storage)
-- **Cloudflare KV**: Used for rate limits, analytics, and session data
+- **Instance Validation**: Only lowercase letters, numbers, and hyphens in instance IDs
+- **Per-Instance Configuration**: Individual API keys, rate limits, themes, and features
+- **D1 Database**: Structured storage for all instance configurations
 - **No User Auth Required**: End users chat without TypingMind login
 
 ## Development Commands
@@ -43,72 +53,68 @@ npm install
 # Set up Cloudflare D1 database
 wrangler d1 create typingmind-chatbot-db
 
-# Set up Cloudflare KV namespaces
-wrangler kv:namespace create "RATE_LIMITS"
-wrangler kv:namespace create "ANALYTICS"
-wrangler kv:namespace create "ADMIN_SESSIONS"
+# Set up Cloudflare KV namespaces (for widget storage)
+wrangler kv:namespace create "AGENT_CONFIG"
 
 # Apply database schema
-wrangler d1 execute typingmind-chatbot-db --file=schema.sql --remote
+wrangler d1 execute typingmind-chatbot-db --file=schema-v2.sql --remote
+
+# Insert test data
+wrangler d1 execute typingmind-chatbot-db --file=fresh-test-data.sql --remote
 ```
 
 ### Development
 ```bash
-# Run worker locally with admin panel
+# Run worker locally
 wrangler dev
 
-# Run widget development server
-npm run dev:widget
+# Build widget
+cd widget && node build.js
 
-# Build all components
-npm run build
-
-# Run tests
-npm test
+# Test locally
+# Open test-clean-system.html in browser
 ```
 
 ### Deployment
 ```bash
-# Deploy worker (includes admin panel)
-wrangler deploy worker-d1.js
+# Deploy worker
+wrangler deploy
 
 # Build and deploy widget
-npm run build:widget
-# Then manually upload widget/dist/widget.min.js to your CDN or hosting
-
-# Apply database migrations if needed
-wrangler d1 execute typingmind-chatbot-db --file=migration.sql --remote
+cd widget && node build.js
+cd .. && ./deploy-widget.sh
 ```
 
 ## API Configuration
 
 TypingMind API details:
-- Default API Key: `tm-sk-cfac2ddb-f1a8-4c5f-a5c8-695aa758b96a`
-- Primary endpoint: `POST /v2/agents/{agent_id}/chat`
+- Primary endpoint: `POST /api/v2/agents/{agent_id}/chat`
 - Header: `X-API-KEY`
-- Supports per-agent API keys via admin configuration
+- Supports per-instance API keys
 
 ## Project Structure
 
 ```
 /
-├── worker-d1.js           # Main Cloudflare Worker with D1 integration
-├── schema.sql             # D1 database schema
-├── migration.sql          # Database migration scripts
+├── worker.js              # Main Cloudflare Worker (clean, no legacy code)
+├── schema-v2.sql          # D1 database schema (instance-based)
+├── fresh-test-data.sql    # Sample instance configurations
 ├── widget/                # Embeddable chat widget
 │   ├── src/              
-│   │   ├── widget.js      # Main widget code with Shadow DOM
+│   │   ├── widget.js      # Main widget code (instanceId only)
 │   │   ├── styles.css     # Widget styles with CSS variables
 │   │   └── icons.js       # SVG icons as JavaScript strings
 │   ├── dist/              # Built widget files
-│   │   └── widget.min.js  # Production bundle
+│   │   └── widget.min.js  # Production bundle (~23KB)
 │   ├── build.js           # Build script for widget
 │   └── demo.html          # Testing page
 ├── wrangler.toml          # Cloudflare Worker configuration
-├── package.json           # Node.js dependencies
-├── test-comprehensive.sh  # Automated testing script
+├── deploy-widget.sh       # Widget deployment script
+├── test-clean-system.html # Test page for multi-instance setup
+├── admin.js               # Admin panel JavaScript functions
 └── docs/                  # Documentation
-    ├── TECHNICAL_SPECIFICATION_V2.md
+    ├── ARCHITECTURE.md    # Comprehensive architecture guide
+    ├── CHANGELOG.md       # Version history and upgrade guides
     └── CLAUDE.md          # This file
 ```
 
@@ -116,94 +122,80 @@ TypingMind API details:
 
 - **API Keys**: Stored in D1 database, never exposed to client
 - **Domain Validation**: Whitelist-based with origin/referer checking
-- **Admin Access**: Password protected with session management (Password: Uptake-Skillful8-Spearman)
-- **Rate Limiting**: Per-IP and per-session limits stored in KV
-- **CORS**: Strict origin validation per agent configuration
-- **Input Sanitization**: Prevent XSS in chat messages
+- **Instance ID Validation**: Alphanumeric with hyphens only (lowercase)
+- **Rate Limiting**: Implemented with KV storage, per-instance limits
+- **CORS**: Strict origin validation per instance configuration
+- **Input Sanitization**: DOM methods prevent XSS in chat messages
+- **Admin Authentication**: Cookie-based sessions with 24-hour expiration
+- **Security Headers**: CSP, XSS protection, HSTS, and more
+- **Session Management**: Secure session IDs with crypto.randomUUID()
 
 ## Database Schema
 
 ### D1 Database Tables
 ```sql
--- Core agent information
-agents (id, name, api_key, created_at, updated_at)
+-- Core instance information
+agent_instances (
+  id TEXT PRIMARY KEY,              -- Instance ID (e.g., 'seo-assistant')
+  typingmind_agent_id TEXT NOT NULL, -- TypingMind agent ID
+  name TEXT NOT NULL,               -- Display name
+  api_key TEXT                      -- Optional custom API key
+)
 
 -- Domain whitelist
-agent_domains (id, agent_id, domain, created_at)
-
--- Path restrictions (optional)
-agent_paths (id, agent_id, path, created_at)
+instance_domains (
+  instance_id TEXT,
+  domain TEXT,      -- e.g., '*.example.com' or 'shop.example.com'
+  UNIQUE(instance_id, domain)
+)
 
 -- Rate limiting configuration
-agent_rate_limits (agent_id, messages_per_hour, messages_per_session)
+instance_rate_limits (
+  instance_id TEXT PRIMARY KEY,
+  messages_per_hour INTEGER DEFAULT 100,
+  messages_per_session INTEGER DEFAULT 30
+)
 
 -- Feature flags
-agent_features (agent_id, image_upload, markdown, persist_session)
+instance_features (
+  instance_id TEXT PRIMARY KEY,
+  image_upload BOOLEAN DEFAULT 0,
+  markdown BOOLEAN DEFAULT 1,
+  persist_session BOOLEAN DEFAULT 0
+)
 
--- Theme customization (includes width and embed mode settings)
-agent_themes (agent_id, primary_color, position, width, embed_mode, font_family, border_radius)
+-- Theme customization
+instance_themes (
+  instance_id TEXT PRIMARY KEY,
+  primary_color TEXT DEFAULT '#007bff',
+  position TEXT DEFAULT 'bottom-right',
+  width INTEGER DEFAULT 380,
+  embed_mode TEXT DEFAULT 'popup',
+  font_family TEXT,
+  border_radius TEXT DEFAULT '8px'
+)
 ```
-
-## Admin Panel Routes
-
-- `/admin` - Login page
-- `/admin/dashboard` - Agent list with management options
-- `/admin/agents/new` - Create new agent form
-- `/admin/agents/:id/edit` - Edit existing agent
-- `DELETE /admin/agents/:id` - Delete agent (API endpoint)
-- `POST /admin/agents` - Create agent (API endpoint)
-- `PUT /admin/agents/:id` - Update agent (API endpoint)
-- `POST /admin/agents/:id/clone` - Clone agent with all settings (API endpoint)
 
 ## Widget Development
 
-### Widget Structure
-```
-widget/
-├── src/
-│   ├── widget.js          # Main widget code with Shadow DOM
-│   ├── styles.css         # Widget styles (embedded)
-│   └── icons.js           # SVG icons as JavaScript strings
-├── dist/
-│   └── widget.min.js      # Production bundle
-├── build.js               # Build script
-└── demo.html              # Testing page
-```
-
-### Widget Development Commands
-```bash
-# Build widget for development
-npm run build:widget
-
-# Build and minify for production
-npm run build:widget:prod
-
-# Watch mode for development
-npm run dev:widget
-
-# Serve demo page locally
-npm run serve:demo
-```
-
 ### Widget Features
 - **Shadow DOM**: Complete style isolation from host page
+- **Instance-Based**: Requires `instanceId` parameter
 - **Responsive Design**: Mobile-first approach
-- **Dual Embed Modes**: Popup (floating) or Inline (embedded in container)
+- **Dual Embed Modes**: Popup (floating) or Inline (embedded)
 - **Session Management**: Persist conversations in localStorage
-- **Markdown Rendering**: Support for formatted bot responses
-- **Error Handling**: Graceful degradation and user feedback
-- **Customizable Theme**: CSS variables for easy styling
+- **Clean Architecture**: No backward compatibility code
 
 ### Widget Configuration
 ```javascript
 // Popup Mode (floating widget) - Default
 TypingMindChat.init({
-  agentId: 'your-agent-id',        // Required - all other settings loaded from admin
+  instanceId: 'seo-assistant',     // Required - no agentId support
   
-  // Optional overrides (these are now managed in admin panel):
-  position: 'bottom-right',         // Override admin setting
-  width: '400px',                   // Override admin setting (CSS variable)
-  embedMode: 'popup',               // Override admin setting
+  // Optional overrides:
+  position: 'bottom-right',         // Override instance setting
+  width: 400,                       // Override instance setting
+  embedMode: 'popup',               // Override instance setting
   theme: {
     primaryColor: '#007bff',
     fontFamily: 'inherit',
@@ -218,69 +210,197 @@ TypingMindChat.init({
 
 // Inline Mode (embedded in container)
 TypingMindChat.init({
-  agentId: 'your-agent-id',        // Required
-  container: document.getElementById('chat-container'), // Required for inline mode
-  embedMode: 'inline',             // Override admin setting to use inline mode
+  instanceId: 'support-bot',       // Required
+  container: document.getElementById('chat-container'), // Required for inline
+  embedMode: 'inline',             // Override instance setting
   onMessage: (msg) => {}           // Message received callback
 });
 ```
 
-## Implementation Status
+## Current Implementation Status
 
-- [x] Phase 1: Core Infrastructure
-  - [x] Cloudflare Worker setup
-  - [x] D1 database setup and schema
-  - [x] Domain validation logic
-  - [x] Basic API proxy
-- [x] Phase 2: Admin Panel
-  - [x] Authentication system
-  - [x] Admin dashboard with agent list
-  - [x] Full CRUD operations for agents
-  - [x] D1 database integration
-- [x] Phase 3: Widget Development
-  - [x] Shadow DOM implementation
-  - [x] Chat UI components
-  - [x] API integration with TypingMind response parsing
-  - [x] Mobile responsiveness
-  - [x] CSS fixes for message bubbles (80% width utilization)
-  - [x] Agent name display in header
-  - [x] Width control via CSS variable
-  - [x] Position and width settings from admin panel
-  - [x] Dual embed modes (popup/inline)
-- [ ] Phase 4: Analytics & Polish
-  - [ ] Usage tracking dashboard
-  - [ ] Performance optimization
-  - [ ] Complete documentation
-  - [ ] Testing suite
+### ✅ Completed
+- Multi-instance architecture implementation
+- Clean database schema (no legacy tables)
+- Widget supports instanceId only (no agentId)
+- Worker simplified (no backward compatibility)
+- Domain validation with wildcard support
+- Instance ID validation
+- Dual embed modes (popup/inline)
+- Shadow DOM isolation
+- Responsive design
+- Session persistence
+- Full admin panel with CRUD operations
+- Cookie-based admin authentication
+- Rate limiting implementation with KV storage
+- Security headers (CSP, XSS protection, HSTS)
+- External admin.js for cleaner architecture
 
-## Recent Updates
+### 🚧 TODO
+- Analytics dashboard
+- Usage tracking metrics
+- Advanced error handling
+- File upload support
+- Multi-language UI
+- Webhook integrations
+- A/B testing features
 
-1. **Database Migration**: Migrated from KV storage to D1 database to resolve JSON parsing issues
-2. **Admin Panel Enhancements**: 
-   - Added "Copy Widget Code" button for easy embedding
-   - Fixed route parameter handling for agent editing
-   - Added width control setting (default: 380px)
-   - Position and width now configurable per agent
-   - Added embed mode selector (popup/inline)
-   - **NEW: Clone Agent feature** - Duplicate agents with all settings
-3. **Widget Improvements**:
-   - Fixed TypingMind API response parsing
-   - Shows agent name in header instead of generic "Chat Support"
-   - Increased message bubble max-width from 70% to 80%
-   - Width control via --tm-window-width CSS variable
-   - Loads position and width from agent configuration
-   - **NEW: Dual embed modes**
-     - Popup mode: Floating chat button (default)
-     - Inline mode: Fills container element
-4. **Bug Fixes**:
-   - Fixed Error 1101 when editing agents (itty-router params issue)
-   - Fixed template literal escaping in admin forms
-   - Added missing width column to production database
-   - Resolved CORS issues with proper origin handling
-   - **Fixed Copy Widget Code** - Now uses modern Clipboard API with fallback
-5. **Latest Additions**: 
-   - Added embed_mode column to agent_themes table
-   - Widget auto-detects mode based on container presence
-   - Full style isolation for both modes using Shadow DOM
-   - Clone button in admin panel for easy agent duplication
-   - Improved clipboard functionality with better browser support
+## Testing
+
+### Test Instances
+The system includes two test instances:
+- `seo-assistant` - SEO Assistant Bot (popup mode)
+- `support-bot` - Customer Support Bot (inline mode)
+
+### Test Commands
+```bash
+# Test instance info endpoint
+curl https://typingmind-chatbot.webfonts.workers.dev/instance/seo-assistant
+
+# Test chat endpoint
+curl -X POST https://typingmind-chatbot.webfonts.workers.dev/chat \
+  -H "Content-Type: application/json" \
+  -H "Origin: https://allowed-domain.com" \
+  -d '{
+    "instanceId": "seo-assistant",
+    "messages": [{"role": "user", "content": "Hello"}],
+    "sessionId": "test-123"
+  }'
+```
+
+## Common Tasks
+
+### Add a New Instance
+```sql
+-- Add to agent_instances
+INSERT INTO agent_instances (id, typingmind_agent_id, name) 
+VALUES ('new-bot', 'character-xxx', 'New Bot Name');
+
+-- Add allowed domains
+INSERT INTO instance_domains (instance_id, domain) 
+VALUES ('new-bot', '*.example.com');
+
+-- Configure features
+INSERT INTO instance_features (instance_id, markdown, persist_session) 
+VALUES ('new-bot', 1, 1);
+
+-- Set theme
+INSERT INTO instance_themes (instance_id, primary_color, embed_mode) 
+VALUES ('new-bot', '#28a745', 'inline');
+```
+
+### Update Instance Configuration
+```sql
+-- Change theme
+UPDATE instance_themes 
+SET primary_color = '#dc3545', width = 450 
+WHERE instance_id = 'new-bot';
+
+-- Add domain
+INSERT INTO instance_domains (instance_id, domain) 
+VALUES ('new-bot', 'app.example.com');
+
+-- Update rate limits
+UPDATE instance_rate_limits 
+SET messages_per_hour = 200 
+WHERE instance_id = 'new-bot';
+```
+
+## Admin Panel
+
+The system includes a full web-based admin panel for managing instances:
+
+### Access
+- Navigate to `/admin` on your worker domain
+- Login with the admin password set via `wrangler secret put ADMIN_PASSWORD`
+- Sessions expire after 24 hours
+
+### Features
+- **Dashboard**: View all instances with domain counts and creation dates
+- **Create Instance**: Add new instances with full configuration
+- **Edit Instance**: Update all settings including domains, features, and themes
+- **Clone Instance**: Duplicate an instance with a new ID
+- **Delete Instance**: Remove instances (cascading deletes all related data)
+- **Widget Code**: Generate copy-paste embed code for each instance
+
+### Admin Routes
+- `GET /admin` - Login page
+- `POST /admin/login` - Authentication endpoint
+- `GET /admin/dashboard` - Main instance list
+- `GET /admin/instances/new` - Create instance form
+- `POST /admin/instances` - Create instance endpoint
+- `GET /admin/instances/:id/edit` - Edit instance form
+- `PUT /admin/instances/:id` - Update instance endpoint
+- `DELETE /admin/instances/:id` - Delete instance endpoint
+- `POST /admin/instances/:id/clone` - Clone instance endpoint
+- `POST /admin/logout` - Logout endpoint
+
+## Important Notes
+
+1. **No Backward Compatibility**: The system has been cleaned of all legacy code
+2. **Instance IDs Required**: All operations require valid instance IDs
+3. **Clean Architecture**: Simplified codebase without fallback logic
+4. **Production Ready**: Current implementation is stable for production use
+5. **Admin Panel Available**: Full web UI for instance management at `/admin`
+
+## Troubleshooting
+
+### Common Issues
+
+1. **"Instance not found"**
+   - Check instance exists: `SELECT * FROM agent_instances WHERE id = 'your-id';`
+   - Verify instance ID format (lowercase, alphanumeric, hyphens only)
+
+2. **"Domain not authorized"**
+   - Check allowed domains: `SELECT * FROM instance_domains WHERE instance_id = 'your-id';`
+   - Remember wildcards: `*.example.com` matches all subdomains
+
+3. **"Agent not configured in TypingMind"**
+   - Verify the typingmind_agent_id is correct
+   - Check TypingMind dashboard for the agent
+
+4. **Admin login issues**
+   - Ensure ADMIN_PASSWORD is set: `wrangler secret put ADMIN_PASSWORD`
+   - Check browser console for detailed error messages
+   - Verify cookies are enabled in your browser
+   - Try clearing cookies and logging in again
+
+5. **JavaScript errors in admin panel**
+   - Check that `/admin/admin.js` is loading correctly
+   - Look for syntax errors in browser console
+   - Ensure all form IDs match between HTML and JavaScript
+
+6. **Widget not working (agentId/instanceId errors)**
+   - Rebuild the widget: `cd widget && node build.js`
+   - Deploy to Cloudflare: `wrangler kv key put "widget:code" --binding=AGENT_CONFIG --path widget/dist/widget.min.js --remote`
+   - Ensure embed code uses `instanceId` (not `agentId`)
+   - Clear browser cache and reload the page
+
+### Debug Mode
+Enable console logging in widget:
+```javascript
+// Check browser console for detailed logs
+TypingMindChat.init({
+  instanceId: 'test-bot',
+  debug: true  // Future feature
+});
+```
+
+### Test Pages
+The system includes comprehensive test pages available on Cloudflare:
+
+- **Test Index**: https://typingmind-chatbot.webfonts.workers.dev/test
+- **Comprehensive Test**: https://typingmind-chatbot.webfonts.workers.dev/test/comprehensive
+- **Automated Tests**: https://typingmind-chatbot.webfonts.workers.dev/test/automated
+- **Production Embed Test**: https://typingmind-chatbot.webfonts.workers.dev/test/embed
+
+Deploy test pages with:
+```bash
+./deploy-tests.sh
+```
+
+## Version History
+
+See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
+
+Current version: **2.1.1** (Widget deployment fix, removed agentId backward compatibility)

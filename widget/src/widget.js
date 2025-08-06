@@ -20,10 +20,20 @@
         ...config
       };
       
-      if (!this.config.agentId) {
-        console.error('TypingMind Chat: agentId is required');
+      // Store explicitly set values
+      this.explicitConfig = {
+        embedMode: config.embedMode || null,
+        position: config.position || null,
+        width: config.width || null
+      };
+      
+      // Require instanceId
+      if (!this.config.instanceId) {
+        console.error('TypingMind Chat: instanceId is required');
         return;
       }
+      
+      this.instanceId = this.config.instanceId;
       
       this.state = {
         isOpen: false,
@@ -42,7 +52,7 @@
     init() {
       // Create container
       const container = document.createElement('div');
-      container.id = `typingmind-widget-${this.config.agentId}`;
+      container.id = `typingmind-widget-${this.instanceId}`;
       
       // Set container styles based on embed mode
       if (this.config.embedMode === 'inline') {
@@ -69,14 +79,19 @@
         this.applyTheme();
       }
       
+      // For inline mode, set isOpen BEFORE render
+      if (this.config.embedMode === 'inline') {
+        this.state.isOpen = true;
+      }
+      
       // Create UI
       this.render();
       
       // Add to page or container
       if (this.config.embedMode === 'inline' && this.config.container) {
         this.config.container.appendChild(container);
-        // For inline mode, show the chat window immediately
-        this.state.isOpen = true;
+        // Ensure inline mode is properly displayed
+        this.initializeInlineMode();
       } else {
         document.body.appendChild(container);
       }
@@ -88,12 +103,26 @@
       this.setupEventListeners();
     }
     
+    generateFallbackUUID() {
+      // Fallback UUID v4 generation for older browsers
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        const r = (Math.random() * 16) | 0;
+        const v = c === 'x' ? r : (r & 0x3) | 0x8;
+        return v.toString(16);
+      });
+    }
+    
     getOrCreateSessionId() {
-      const key = `tm-session-${this.config.agentId}`;
+      const key = `tm-session-${this.instanceId}`;
       let sessionId = localStorage.getItem(key);
       
       if (!sessionId) {
-        sessionId = 'sess_' + Math.random().toString(36).substr(2, 9);
+        // Use crypto.randomUUID() for secure session ID generation
+        sessionId = 'sess_' + (
+          typeof crypto !== 'undefined' && crypto.randomUUID 
+            ? crypto.randomUUID() 
+            : this.generateFallbackUUID()
+        );
         localStorage.setItem(key, sessionId);
       }
       
@@ -102,7 +131,8 @@
     
     async fetchAgentInfo() {
       try {
-        const response = await fetch(`${this.config.workerUrl}/agent/${this.config.agentId}`);
+        // Fetch instance info
+        const response = await fetch(`${this.config.workerUrl}/instance/${this.instanceId}`);
         if (response.ok) {
           const agentInfo = await response.json();
           this.state.agentInfo = agentInfo;
@@ -120,21 +150,25 @@
           if (agentInfo.theme) {
             this.config.theme = { ...this.config.theme, ...agentInfo.theme };
             
-            // Apply position from theme
-            if (agentInfo.theme.position) {
+            // Apply position from theme (only if not explicitly set)
+            if (agentInfo.theme.position && !this.explicitConfig.position) {
               this.config.position = agentInfo.theme.position;
               // Update button and window position classes
               this.updatePositionClasses();
             }
             
-            // Apply width from theme
-            if (agentInfo.theme.width) {
+            // Apply width from theme (only if not explicitly set)
+            if (agentInfo.theme.width && !this.explicitConfig.width) {
               this.config.width = agentInfo.theme.width;
             }
             
-            // Apply embed mode from theme (only if not explicitly set)
-            if (agentInfo.theme.embedMode && !this.config.embedMode) {
+            // Apply embed mode from theme (only if not explicitly set during init)
+            if (agentInfo.theme.embedMode && !this.explicitConfig.embedMode) {
               this.config.embedMode = agentInfo.theme.embedMode;
+              // If embed mode changed after init, we need to re-render
+              if (this.config.embedMode !== this.state.renderedMode) {
+                console.warn('Embed mode changed after render. Manual refresh may be required.');
+              }
             }
             
             this.applyTheme();
@@ -178,6 +212,25 @@
       // Add new position class
       this.elements.button.classList.add(this.config.position);
       this.elements.window.classList.add(this.config.position);
+    }
+    
+    initializeInlineMode() {
+      if (!this.elements.window) return;
+      
+      // Ensure the window is visible for inline mode
+      this.elements.window.classList.add('tm-open', 'tm-inline');
+      this.elements.window.style.opacity = '1';
+      this.elements.window.style.transform = 'none';
+      this.elements.window.style.position = 'relative';
+      this.elements.window.style.width = '100%';
+      this.elements.window.style.height = '100%';
+      
+      // Focus the input
+      if (this.elements.input) {
+        setTimeout(() => {
+          this.elements.input.focus();
+        }, 100);
+      }
     }
     
     render() {
@@ -256,8 +309,11 @@
       };
       
       // In inline mode, show the window immediately
-      if (this.config.embedMode === 'inline' && this.state.isOpen) {
-        this.elements.window.classList.add('tm-open');
+      if (this.config.embedMode === 'inline') {
+        this.elements.window.classList.add('tm-open', 'tm-inline');
+        // Ensure it's visible
+        this.elements.window.style.opacity = '1';
+        this.elements.window.style.transform = 'none';
       }
     }
     
@@ -388,21 +444,30 @@
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            agentId: this.config.agentId,
+            instanceId: this.instanceId,
             messages: messages,
             sessionId: this.state.sessionId
           })
         });
         
         if (!response.ok) {
-          const error = await response.json();
+          let error;
+          try {
+            error = await response.json();
+          } catch (e) {
+            error = { error: `HTTP ${response.status} error`, details: 'Failed to parse error response' };
+          }
+          
           console.error('Chat API error:', {
             status: response.status,
             error: error,
-            agentId: this.config.agentId,
+            instanceId: this.instanceId,
             workerUrl: this.config.workerUrl
           });
-          throw new Error(error.error || 'Failed to get response');
+          
+          // Use detailed error message if available
+          const errorMessage = error.details || error.error || `Failed to get response (${response.status})`;
+          throw new Error(errorMessage);
         }
         
         // Handle streaming response
@@ -431,6 +496,18 @@
             assistantContent = data.content;
           } else if (data.message) {
             assistantContent = data.message;
+          } else if (data.error) {
+            // If the response contains an error, show it
+            if (typeof data.error === 'object') {
+              // Handle error object
+              assistantContent = `Error: ${data.error.message || JSON.stringify(data.error)}`;
+            } else {
+              assistantContent = `Error: ${data.error}`;
+            }
+            if (data.details) {
+              assistantContent += ` - ${data.details}`;
+            }
+            console.error('API returned error in response:', data);
           }
           
           this.addMessage({
@@ -522,7 +599,10 @@
       if (messageEls[index]) {
         const contentEl = messageEls[index].querySelector('.tm-message-content');
         if (contentEl) {
-          contentEl.innerHTML = this.formatMessage(message.content);
+          // Clear existing content and append safe formatted content
+          contentEl.innerHTML = '';
+          const formattedContent = this.formatMessage(message.content);
+          contentEl.appendChild(formattedContent);
         }
       }
       
@@ -538,30 +618,119 @@
         minute: '2-digit' 
       });
       
-      div.innerHTML = `
-        <div class="tm-message-avatar">${message.role === 'user' ? 'U' : 'B'}</div>
-        <div>
-          <div class="tm-message-content">${this.formatMessage(message.content)}</div>
-          <div class="tm-message-time">${time}</div>
-        </div>
-      `;
+      // Create avatar element
+      const avatarDiv = document.createElement('div');
+      avatarDiv.className = 'tm-message-avatar';
+      avatarDiv.textContent = message.role === 'user' ? 'U' : 'B';
+      
+      // Create content wrapper
+      const contentWrapper = document.createElement('div');
+      
+      // Create message content element
+      const contentDiv = document.createElement('div');
+      contentDiv.className = 'tm-message-content';
+      const formattedContent = this.formatMessage(message.content);
+      contentDiv.appendChild(formattedContent);
+      
+      // Create time element
+      const timeDiv = document.createElement('div');
+      timeDiv.className = 'tm-message-time';
+      timeDiv.textContent = time;
+      
+      // Assemble the message structure
+      contentWrapper.appendChild(contentDiv);
+      contentWrapper.appendChild(timeDiv);
+      
+      div.appendChild(avatarDiv);
+      div.appendChild(contentWrapper);
       
       return div;
     }
     
     formatMessage(content) {
-      // Basic markdown support
-      let formatted = content
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/\n\n/g, '</p><p>')
-        .replace(/\n/g, '<br>')
-        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-        .replace(/\*(.*?)\*/g, '<em>$1</em>')
-        .replace(/`(.*?)`/g, '<code>$1</code>');
+      // Safe markdown parsing using DOM methods
+      const container = document.createElement('div');
       
-      return `<p>${formatted}</p>`;
+      // Split content into paragraphs
+      const paragraphs = content.split(/\n\n/);
+      
+      paragraphs.forEach(paragraph => {
+        const p = document.createElement('p');
+        
+        // Process the paragraph text safely
+        const processedNodes = this.parseInlineMarkdown(paragraph);
+        processedNodes.forEach(node => p.appendChild(node));
+        
+        container.appendChild(p);
+      });
+      
+      return container;
+    }
+    
+    parseInlineMarkdown(text) {
+      const nodes = [];
+      let remaining = text;
+      
+      // Regular expressions for inline markdown
+      const patterns = [
+        { regex: /\*\*(.*?)\*\*/, tag: 'strong' },
+        { regex: /\*(.*?)\*/, tag: 'em' },
+        { regex: /`(.*?)`/, tag: 'code' }
+      ];
+      
+      while (remaining) {
+        let earliestMatch = null;
+        let earliestIndex = remaining.length;
+        let matchedPattern = null;
+        
+        // Find the earliest match
+        for (const pattern of patterns) {
+          const match = remaining.match(pattern.regex);
+          if (match && match.index < earliestIndex) {
+            earliestMatch = match;
+            earliestIndex = match.index;
+            matchedPattern = pattern;
+          }
+        }
+        
+        if (earliestMatch) {
+          // Add text before the match
+          if (earliestIndex > 0) {
+            const textBefore = remaining.substring(0, earliestIndex);
+            nodes.push(...this.createTextNodesWithLineBreaks(textBefore));
+          }
+          
+          // Add the matched element
+          const element = document.createElement(matchedPattern.tag);
+          element.textContent = earliestMatch[1];
+          nodes.push(element);
+          
+          // Update remaining text
+          remaining = remaining.substring(earliestIndex + earliestMatch[0].length);
+        } else {
+          // No more matches, add remaining text
+          nodes.push(...this.createTextNodesWithLineBreaks(remaining));
+          break;
+        }
+      }
+      
+      return nodes;
+    }
+    
+    createTextNodesWithLineBreaks(text) {
+      const nodes = [];
+      const lines = text.split('\n');
+      
+      lines.forEach((line, index) => {
+        if (index > 0) {
+          nodes.push(document.createElement('br'));
+        }
+        if (line) {
+          nodes.push(document.createTextNode(line));
+        }
+      });
+      
+      return nodes;
     }
     
     setLoading(loading) {
@@ -620,13 +789,13 @@
     }
     
     saveMessages() {
-      const key = `tm-messages-${this.config.agentId}`;
+      const key = `tm-messages-${this.instanceId}`;
       const toSave = this.state.messages.slice(-50); // Keep last 50 messages
       localStorage.setItem(key, JSON.stringify(toSave));
     }
     
     loadMessages() {
-      const key = `tm-messages-${this.config.agentId}`;
+      const key = `tm-messages-${this.instanceId}`;
       const saved = localStorage.getItem(key);
       
       if (saved) {
@@ -663,39 +832,42 @@
     instances: {},
     
     init(config) {
-      if (!config.agentId) {
-        console.error('TypingMind Chat: agentId is required');
+      // Only support instanceId
+      const id = config.instanceId;
+      
+      if (!id) {
+        console.error('TypingMind Chat: instanceId is required');
         return null;
       }
       
       // Destroy existing instance if present
-      if (this.instances[config.agentId]) {
-        this.instances[config.agentId].destroy();
+      if (this.instances[id]) {
+        this.instances[id].destroy();
       }
       
       // Create new instance
       const widget = new TypingMindChatWidget(config);
-      this.instances[config.agentId] = widget;
+      this.instances[id] = widget;
       
       return widget;
     },
     
-    destroy(agentId) {
-      if (this.instances[agentId]) {
-        this.instances[agentId].destroy();
-        delete this.instances[agentId];
+    destroy(id) {
+      if (this.instances[id]) {
+        this.instances[id].destroy();
+        delete this.instances[id];
       }
     },
     
-    open(agentId) {
-      if (this.instances[agentId]) {
-        this.instances[agentId].open();
+    open(id) {
+      if (this.instances[id]) {
+        this.instances[id].open();
       }
     },
     
-    close(agentId) {
-      if (this.instances[agentId]) {
-        this.instances[agentId].close();
+    close(id) {
+      if (this.instances[id]) {
+        this.instances[id].close();
       }
     }
   };

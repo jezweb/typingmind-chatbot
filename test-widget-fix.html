@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Widget Fix Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        code {
+            background: #f0f0f0;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+        .success {
+            color: green;
+            font-weight: bold;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>TypingMind Widget Test - Fix Verification</h1>
+    
+    <div class="test-section">
+        <h2>Test 1: Using instanceId (Correct)</h2>
+        <p>This should work properly:</p>
+        <pre><code>TypingMindChat.init({
+    instanceId: 'seo-assistant'
+});</code></pre>
+        <div id="test1-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 2: Using agentId (Legacy - Should Still Work)</h2>
+        <p>This should work for backward compatibility:</p>
+        <pre><code>TypingMindChat.init({
+    agentId: 'seo-assistant'  // Using instanceId value for testing
+});</code></pre>
+        <div id="test2-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 3: Missing ID (Should Fail)</h2>
+        <p>This should show an error in console:</p>
+        <pre><code>TypingMindChat.init({
+    // No instanceId or agentId
+});</code></pre>
+        <div id="test3-result"></div>
+    </div>
+
+    <script>
+        // Log console messages
+        const originalError = console.error;
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            if (args[0] && args[0].includes('is required')) {
+                document.getElementById('test3-result').innerHTML = '<span class="error">✗ Error (as expected): ' + args[0] + '</span>';
+            }
+        };
+    </script>
+
+    <!-- Load the widget -->
+    <script src="https://typingmind-chatbot.webfonts.workers.dev/widget.js"></script>
+    
+    <script>
+        // Test 1: Using instanceId
+        try {
+            const widget1 = TypingMindChat.init({
+                instanceId: 'seo-assistant'
+            });
+            if (widget1) {
+                document.getElementById('test1-result').innerHTML = '<span class="success">✓ Widget initialized successfully with instanceId!</span>';
+                // Clean up
+                setTimeout(() => TypingMindChat.destroy('seo-assistant'), 1000);
+            }
+        } catch (e) {
+            document.getElementById('test1-result').innerHTML = '<span class="error">✗ Error: ' + e.message + '</span>';
+        }
+
+        // Test 2: Using agentId (legacy)
+        setTimeout(() => {
+            try {
+                const widget2 = TypingMindChat.init({
+                    agentId: 'support-bot'  // Using a different instance for testing
+                });
+                if (widget2) {
+                    document.getElementById('test2-result').innerHTML = '<span class="success">✓ Widget initialized successfully with agentId (backward compatibility)!</span>';
+                    // Clean up
+                    setTimeout(() => TypingMindChat.destroy('support-bot'), 1000);
+                }
+            } catch (e) {
+                document.getElementById('test2-result').innerHTML = '<span class="error">✗ Error: ' + e.message + '</span>';
+            }
+        }, 2000);
+
+        // Test 3: Missing ID
+        setTimeout(() => {
+            try {
+                const widget3 = TypingMindChat.init({
+                    // No ID provided
+                });
+                if (!widget3) {
+                    // This is expected
+                    console.log('Test 3: Correctly returned null for missing ID');
+                }
+            } catch (e) {
+                document.getElementById('test3-result').innerHTML = '<span class="error">✗ Unexpected error: ' + e.message + '</span>';
+            }
+        }, 4000);
+    </script>
+</body>
+</html>

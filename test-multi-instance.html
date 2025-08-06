@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Instance Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .instance-container {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .chat-container {
+            height: 500px;
+            width: 100%;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            margin-top: 20px;
+            position: relative;
+        }
+        .info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        code {
+            background: #f5f5f5;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+        .error {
+            color: #d32f2f;
+            background: #ffebee;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        .success {
+            color: #388e3c;
+            background: #e8f5e9;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Multi-Instance TypingMind Chatbot Test</h1>
+        
+        <div class="instance-container">
+            <h2>Test Instance: SEO Bot</h2>
+            <div class="info">
+                <p><strong>Instance ID:</strong> <code>seo-bot-test</code></p>
+                <p><strong>Configuration:</strong> Inline mode, 600px width, blue theme</p>
+                <p><strong>Using:</strong> Your configured TypingMind agent</p>
+            </div>
+            
+            <div id="status-1" class="status"></div>
+            
+            <div id="chat-1" class="chat-container">
+                <!-- Chat widget will appear here -->
+            </div>
+        </div>
+
+        <div class="instance-container">
+            <h2>How This Works</h2>
+            <p>The multi-instance system allows you to:</p>
+            <ul>
+                <li>Use <strong>instance IDs</strong> instead of TypingMind agent IDs</li>
+                <li>Have multiple configurations for the same TypingMind agent</li>
+                <li>Clone agents in TypingMind without breaking your widgets</li>
+                <li>Set different themes, domains, and rate limits per instance</li>
+            </ul>
+            
+            <h3>Update Your Embed Code</h3>
+            <p>Change from:</p>
+            <pre><code>TypingMindChat.init({
+    agentId: 'character-xxx-xxx',  // TypingMind agent ID
+    embedMode: 'inline'
+});</code></pre>
+            
+            <p>To:</p>
+            <pre><code>TypingMindChat.init({
+    instanceId: 'seo-bot-test',    // Your instance ID
+    embedMode: 'inline'
+});</code></pre>
+        </div>
+    </div>
+
+    <script src="https://typingmind-chatbot.webfonts.workers.dev/widget.js"></script>
+    <script>
+        // Test instance initialization
+        try {
+            const statusEl = document.getElementById('status-1');
+            
+            // Initialize with instance ID
+            const widget = TypingMindChat.init({
+                instanceId: 'seo-bot-test',  // Using instance ID instead of agent ID
+                container: document.getElementById('chat-1'),
+                embedMode: 'inline'
+            });
+            
+            if (widget) {
+                statusEl.innerHTML = '<div class="success">✓ Widget initialized successfully with instance ID</div>';
+                console.log('Widget initialized:', {
+                    instanceId: 'seo-bot-test',
+                    embedMode: 'inline'
+                });
+            } else {
+                statusEl.innerHTML = '<div class="error">✗ Widget initialization failed</div>';
+            }
+        } catch (error) {
+            document.getElementById('status-1').innerHTML = 
+                `<div class="error">✗ Error: ${error.message}</div>`;
+        }
+    </script>
+</body>
+</html>

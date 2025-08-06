@@ -1,127 +1,135 @@
-# TypingMind Chatbot Platform
+# TypingMind Multi-Instance Chatbot Platform
 
-A multi-tenant chatbot platform that allows embedding AI agents from TypingMind on various websites with centralized management through Cloudflare Workers.
+A clean, multi-instance embeddable chatbot platform powered by TypingMind API, built on Cloudflare Workers.
 
 ## Features
 
-- 🤖 Multiple AI agents with individual configurations
-- 🔒 Domain-based access control with wildcard support
-- 🔑 Per-agent API key management
-- 📊 Usage analytics and rate limiting
-- 🎨 Customizable widget themes
-- 📐 Dual embed modes: Popup (floating) or Inline (embedded)
-- ⚡ Serverless architecture with Cloudflare Workers
-- 💾 Configuration storage with Cloudflare D1 Database
+- 🤖 **Multi-Instance Architecture** - Deploy multiple chatbot configurations with unique instance IDs
+- 🔒 **Domain-Based Security** - Whitelist domains with wildcard support
+- 🎨 **Customizable Themes** - Per-instance colors, positioning, and styling
+- 📱 **Responsive Design** - Works on desktop and mobile devices
+- 💬 **Dual Embed Modes** - Popup (floating) or inline (embedded) widgets
+- ⚡ **Edge Computing** - Fast response times with Cloudflare Workers
+- 🗄️ **D1 Database** - Structured storage for configurations
 
 ## Quick Start
 
 ### Prerequisites
 
 - Cloudflare account
-- Wrangler CLI installed (`npm install -g wrangler`)
-- TypingMind API key
 - Node.js 16+
+- Wrangler CLI (`npm install -g wrangler`)
+- TypingMind API key
 
 ### Installation
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/jezweb/typingmind-chatbot.git
+git clone <repository-url>
 cd typingmind-chatbot
-```
-
-2. Install dependencies:
-```bash
 npm install
 ```
 
-3. Configure your Cloudflare account:
+2. Create D1 database:
 ```bash
-wrangler login
+wrangler d1 create typingmind-chatbot-db
 ```
 
-4. Deploy to Cloudflare:
+3. Update `wrangler.toml` with your database ID:
+```toml
+[[d1_databases]]
+binding = "DB"
+database_name = "typingmind-chatbot-db"
+database_id = "YOUR_DATABASE_ID"
+```
+
+4. Apply database schema:
+```bash
+wrangler d1 execute typingmind-chatbot-db --file=schema-v2.sql --remote
+```
+
+5. Insert test data:
+```bash
+wrangler d1 execute typingmind-chatbot-db --file=fresh-test-data.sql --remote
+```
+
+6. Deploy worker:
 ```bash
 wrangler deploy
 ```
 
-### Configuration
+7. Build and deploy widget:
+```bash
+cd widget && node build.js
+cd .. && ./deploy-widget.sh
+```
 
-1. Access the admin panel at: `https://your-worker.workers.dev/admin`
-2. Login with the password set in your environment variables
-3. Create and manage agents through the web interface
-4. Configure embed mode (popup/inline) per agent
-5. Copy the widget code from the dashboard
+## Usage
 
-### Embedding the Widget
-
-The widget supports two embed modes:
-
-#### Popup Mode (Default)
-Displays as a floating chat button in the corner of the page:
+### Embed Widget (Popup Mode)
 
 ```html
 <script src="https://your-worker.workers.dev/widget.js"></script>
 <script>
   TypingMindChat.init({
-    agentId: 'your-agent-id'
+    instanceId: 'seo-assistant'
   });
 </script>
 ```
 
-#### Inline Mode
-Embeds the chat directly into a container element on your page:
+### Embed Widget (Inline Mode)
 
 ```html
-<div id="chat-container" style="height: 500px; width: 100%;">
-  <!-- Chat widget will fill this container -->
-</div>
+<div id="chat-container" style="height: 500px;"></div>
 <script src="https://your-worker.workers.dev/widget.js"></script>
 <script>
   TypingMindChat.init({
-    agentId: 'your-agent-id',
+    instanceId: 'support-bot',
     container: document.getElementById('chat-container'),
     embedMode: 'inline'
   });
 </script>
 ```
 
-## Agent Configuration
+## Configuration
 
-Agents are managed through the admin panel at `/admin`. Configuration includes:
+### Add New Instance
 
-- **Basic Settings**: Agent ID, name, and optional custom API key
-- **Domain Restrictions**: Allowed domains with wildcard support
-- **Rate Limiting**: Messages per hour and per session
-- **Features**: Image upload, markdown support, session persistence
-- **Theme Settings**: 
-  - Primary color
-  - Widget position (bottom-right, bottom-left, top-right, top-left)
-  - Widget width (300-600px)
-  - Embed mode (popup or inline)
+```sql
+-- Create instance
+INSERT INTO agent_instances (id, typingmind_agent_id, name) 
+VALUES ('my-bot', 'character-xxx', 'My Bot');
 
-## Security
+-- Allow domains
+INSERT INTO instance_domains (instance_id, domain) 
+VALUES ('my-bot', '*.example.com');
 
-- Domain validation ensures widgets only work on authorized websites
-- API keys are stored securely in Cloudflare D1 Database
-- Rate limiting prevents abuse (stored in KV)
-- Admin panel is password protected with session management
-
-## Development
-
-Run the worker locally:
-```bash
-wrangler dev
+-- Configure theme
+INSERT INTO instance_themes (instance_id, primary_color, embed_mode) 
+VALUES ('my-bot', '#28a745', 'popup');
 ```
 
-## Environment Variables
+## Architecture
 
-Set these in your Cloudflare dashboard:
+- **Worker**: API gateway handling instance routing and domain validation
+- **Widget**: Self-contained JavaScript with Shadow DOM isolation
+- **Database**: D1 SQLite for instance configurations
+- **Storage**: KV for widget code distribution
 
-- `ADMIN_PASSWORD`: Admin panel password
-- `DEFAULT_API_KEY`: Default TypingMind API key
-- `TYPINGMIND_API_HOST`: TypingMind API endpoint (default: https://api.typingmind.com)
+See [ARCHITECTURE.md](./ARCHITECTURE.md) for detailed system design.
+
+## Documentation
+
+- [ARCHITECTURE.md](./ARCHITECTURE.md) - System architecture and design
+- [CHANGELOG.md](./CHANGELOG.md) - Version history and migration guides
+- [CLAUDE.md](./CLAUDE.md) - Development guide for Claude Code
+
+## Version
+
+Current version: **2.0.0**
+
+Clean multi-instance architecture with no backward compatibility.
 
 ## License
 
-MIT License - see LICENSE file for details
+MIT License - see [LICENSE](./LICENSE) file
