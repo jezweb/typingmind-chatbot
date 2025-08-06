@@ -1,6 +1,10 @@
-const fs = require('fs');
-const path = require('path');
-const uglify = require('uglify-js');
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import uglify from 'uglify-js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Read source files
 const widgetJs = fs.readFileSync(path.join(__dirname, 'src/widget.js'), 'utf8');
