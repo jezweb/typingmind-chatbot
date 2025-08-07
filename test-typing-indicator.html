@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Typing Indicator Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #333;
+    }
+    .info {
+      background-color: #e3f2fd;
+      border: 1px solid #1976d2;
+      padding: 15px;
+      border-radius: 4px;
+      margin: 20px 0;
+    }
+    .test-section {
+      margin: 30px 0;
+      padding: 20px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    #inline-container {
+      height: 600px;
+      border: 2px dashed #999;
+      background-color: #fafafa;
+      margin-top: 20px;
+    }
+    .typing-indicator-info {
+      background-color: #fff3cd;
+      border: 1px solid #856404;
+      padding: 15px;
+      border-radius: 4px;
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Typing Indicator Test</h1>
+    
+    <div class="info">
+      <h3>Testing Typing Indicator Feature</h3>
+      <p>This page tests the typing indicator functionality:</p>
+      <ul>
+        <li>Typing indicator should appear when sending a message</li>
+        <li>Three animated dots should show while waiting for response</li>
+        <li>Indicator should disappear when response starts streaming</li>
+        <li>Works in both popup and inline modes</li>
+      </ul>
+    </div>
+
+    <div class="typing-indicator-info">
+      <h3>What to Look For</h3>
+      <p>When you send a message, you should see:</p>
+      <ol>
+        <li>Three animated dots appear below your message</li>
+        <li>The dots continue animating while the API processes</li>
+        <li>The dots disappear and are replaced by the actual response</li>
+      </ol>
+    </div>
+
+    <div class="test-section">
+      <h2>Popup Mode Test</h2>
+      <p>Click the chat button in the bottom-right corner. Send a message and watch for the typing indicator.</p>
+    </div>
+
+    <div class="test-section">
+      <h2>Inline Mode Test</h2>
+      <p>Use the chat widget below. Send a message and observe the typing indicator:</p>
+      <div id="inline-container"></div>
+    </div>
+  </div>
+
+  <!-- Load widget from local build -->
+  <script src="./widget/dist/widget.js"></script>
+  
+  <script>
+    // Configure worker URL for local development
+    const workerUrl = 'http://localhost:8787';
+    
+    // Initialize popup mode widget
+    TypingMindChat.init({
+      instanceId: 'seo-assistant',
+      workerUrl: workerUrl,
+      onMessage: (msg) => {
+        console.log('Popup widget - Message received:', msg);
+      },
+      onOpen: () => {
+        console.log('Popup widget opened');
+      }
+    });
+    
+    // Initialize inline mode widget
+    setTimeout(() => {
+      TypingMindChat.init({
+        instanceId: 'support-bot',
+        container: document.getElementById('inline-container'),
+        embedMode: 'inline',
+        workerUrl: workerUrl,
+        onMessage: (msg) => {
+          console.log('Inline widget - Message received:', msg);
+        }
+      });
+    }, 100);
+  </script>
+</body>
+</html>
