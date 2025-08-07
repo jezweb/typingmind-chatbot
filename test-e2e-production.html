@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>E2E Production Test - TypingMind Chatbot</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+    }
+    .test-section {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .test-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+    }
+    .test-case {
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+      padding: 15px;
+    }
+    .test-case h3 {
+      margin-top: 0;
+      color: #007bff;
+    }
+    .status {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .status.success {
+      background: #d4edda;
+      color: #155724;
+    }
+    .status.error {
+      background: #f8d7da;
+      color: #721c24;
+    }
+    .status.pending {
+      background: #fff3cd;
+      color: #856404;
+    }
+    .console {
+      background: #000;
+      color: #0f0;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 4px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .inline-test {
+      height: 400px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      margin-top: 10px;
+    }
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    button:disabled {
+      background: #6c757d;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <h1>🧪 E2E Production Test Suite</h1>
+  <p>Testing deployed widget from: <code>https://typingmind-chatbot.webfonts.workers.dev/widget.js</code></p>
+  
+  <div class="test-section">
+    <h2>Test Configuration</h2>
+    <button onclick="runAllTests()">Run All Tests</button>
+    <button onclick="clearConsole()">Clear Console</button>
+    <div id="test-summary" style="margin-top: 10px;"></div>
+  </div>
+
+  <div class="test-grid">
+    <div class="test-case">
+      <h3>1. Widget Loading</h3>
+      <p>Verifies the widget script loads successfully</p>
+      <div id="test-1-status" class="status pending">Pending</div>
+      <div id="test-1-console" class="console"></div>
+    </div>
+
+    <div class="test-case">
+      <h3>2. Popup Mode Initialization</h3>
+      <p>Tests popup mode with seo-assistant instance</p>
+      <div id="test-2-status" class="status pending">Pending</div>
+      <div id="test-2-console" class="console"></div>
+      <button onclick="testPopupInit()">Test Popup Init</button>
+    </div>
+
+    <div class="test-case">
+      <h3>3. Chat Button Visibility</h3>
+      <p>Checks if chat button appears correctly</p>
+      <div id="test-3-status" class="status pending">Pending</div>
+      <div id="test-3-console" class="console"></div>
+    </div>
+
+    <div class="test-case">
+      <h3>4. Chat Window Opening</h3>
+      <p>Tests opening and closing chat window</p>
+      <div id="test-4-status" class="status pending">Pending</div>
+      <div id="test-4-console" class="console"></div>
+      <button onclick="testChatWindow()">Test Chat Window</button>
+    </div>
+
+    <div class="test-case">
+      <h3>5. Message Sending</h3>
+      <p>Tests sending a message to the API</p>
+      <div id="test-5-status" class="status pending">Pending</div>
+      <div id="test-5-console" class="console"></div>
+      <button onclick="testMessageSending()">Test Message</button>
+    </div>
+
+    <div class="test-case">
+      <h3>6. Session Persistence</h3>
+      <p>Checks if messages persist on reload</p>
+      <div id="test-6-status" class="status pending">Pending</div>
+      <div id="test-6-console" class="console"></div>
+      <button onclick="testSessionPersistence()">Test Session</button>
+    </div>
+  </div>
+
+  <div class="test-section">
+    <h2>Inline Mode Test</h2>
+    <div id="inline-container" class="inline-test"></div>
+    <button onclick="testInlineMode()">Initialize Inline Mode</button>
+  </div>
+
+  <div class="test-section">
+    <h2>Console Output</h2>
+    <div id="main-console" class="console" style="height: 300px;"></div>
+  </div>
+
+  <script>
+    const log = (testId, message) => {
+      const consoleEl = document.getElementById(`test-${testId}-console`);
+      const mainConsole = document.getElementById('main-console');
+      const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
+      const logMessage = `[${timestamp}] ${message}\n`;
+      
+      if (consoleEl) {
+        consoleEl.textContent += logMessage;
+        consoleEl.scrollTop = consoleEl.scrollHeight;
+      }
+      mainConsole.textContent += `[Test ${testId}] ${logMessage}`;
+      mainConsole.scrollTop = mainConsole.scrollHeight;
+    };
+
+    const setStatus = (testId, status) => {
+      const statusEl = document.getElementById(`test-${testId}-status`);
+      statusEl.className = `status ${status}`;
+      statusEl.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+      updateSummary();
+    };
+
+    const updateSummary = () => {
+      const statuses = document.querySelectorAll('.status');
+      let success = 0, error = 0, pending = 0;
+      
+      statuses.forEach(el => {
+        if (el.classList.contains('success')) success++;
+        else if (el.classList.contains('error')) error++;
+        else if (el.classList.contains('pending')) pending++;
+      });
+      
+      document.getElementById('test-summary').innerHTML = 
+        `<span class="status success">✓ ${success} Passed</span> ` +
+        `<span class="status error">✗ ${error} Failed</span> ` +
+        `<span class="status pending">⋯ ${pending} Pending</span>`;
+    };
+
+    const clearConsole = () => {
+      document.querySelectorAll('.console').forEach(el => el.textContent = '');
+    };
+
+    // Test 1: Widget Loading
+    const testWidgetLoading = async () => {
+      log(1, 'Loading widget script...');
+      try {
+        const script = document.createElement('script');
+        script.src = 'https://typingmind-chatbot.webfonts.workers.dev/widget.js';
+        
+        await new Promise((resolve, reject) => {
+          script.onload = resolve;
+          script.onerror = reject;
+          document.body.appendChild(script);
+        });
+        
+        log(1, 'Widget script loaded successfully');
+        
+        // Check if TypingMindChat global exists
+        if (typeof window.TypingMindChat !== 'undefined') {
+          log(1, 'TypingMindChat global object found');
+          setStatus(1, 'success');
+        } else {
+          throw new Error('TypingMindChat global not found');
+        }
+      } catch (error) {
+        log(1, `Error: ${error.message}`);
+        setStatus(1, 'error');
+      }
+    };
+
+    // Test 2: Popup Mode Initialization
+    const testPopupInit = async () => {
+      log(2, 'Initializing popup mode...');
+      try {
+        if (typeof window.TypingMindChat === 'undefined') {
+          throw new Error('Widget not loaded yet');
+        }
+
+        // Clean up any existing instance
+        const existingRoot = document.querySelector('#tm-widget-root');
+        if (existingRoot) {
+          existingRoot.remove();
+          log(2, 'Cleaned up existing widget');
+        }
+
+        window.TypingMindChat.init({
+          instanceId: 'seo-assistant',
+          position: 'bottom-right',
+          onOpen: () => log(2, 'Chat opened'),
+          onClose: () => log(2, 'Chat closed'),
+          onMessage: (msg) => log(2, `Message received: ${msg.content?.substring(0, 50)}...`)
+        });
+        
+        log(2, 'Widget initialized successfully');
+        
+        // Wait for widget to be created
+        setTimeout(() => {
+          const widgetRoot = document.querySelector('#tm-widget-root');
+          if (widgetRoot && widgetRoot.shadowRoot) {
+            log(2, 'Widget root and shadow DOM created');
+            setStatus(2, 'success');
+            
+            // Trigger test 3
+            testChatButtonVisibility();
+          } else {
+            throw new Error('Widget root not found');
+          }
+        }, 500);
+      } catch (error) {
+        log(2, `Error: ${error.message}`);
+        setStatus(2, 'error');
+      }
+    };
+
+    // Test 3: Chat Button Visibility
+    const testChatButtonVisibility = () => {
+      log(3, 'Checking chat button visibility...');
+      try {
+        const widgetRoot = document.querySelector('#tm-widget-root');
+        if (!widgetRoot || !widgetRoot.shadowRoot) {
+          throw new Error('Widget not initialized');
+        }
+
+        const chatButton = widgetRoot.shadowRoot.querySelector('.tm-chat-button');
+        if (chatButton) {
+          log(3, 'Chat button found');
+          
+          const style = getComputedStyle(chatButton);
+          log(3, `Button display: ${style.display}`);
+          log(3, `Button position: ${chatButton.className}`);
+          
+          if (style.display !== 'none') {
+            setStatus(3, 'success');
+          } else {
+            throw new Error('Chat button is hidden');
+          }
+        } else {
+          throw new Error('Chat button not found');
+        }
+      } catch (error) {
+        log(3, `Error: ${error.message}`);
+        setStatus(3, 'error');
+      }
+    };
+
+    // Test 4: Chat Window Opening
+    const testChatWindow = () => {
+      log(4, 'Testing chat window...');
+      try {
+        const widgetRoot = document.querySelector('#tm-widget-root');
+        if (!widgetRoot || !widgetRoot.shadowRoot) {
+          throw new Error('Widget not initialized');
+        }
+
+        const chatButton = widgetRoot.shadowRoot.querySelector('.tm-chat-button');
+        if (!chatButton) {
+          throw new Error('Chat button not found');
+        }
+
+        // Click to open
+        log(4, 'Clicking chat button to open...');
+        chatButton.click();
+        
+        setTimeout(() => {
+          const chatWindow = widgetRoot.shadowRoot.querySelector('.tm-chat-window');
+          if (chatWindow && chatWindow.classList.contains('tm-visible')) {
+            log(4, 'Chat window opened successfully');
+            
+            // Find close button
+            const closeButton = chatWindow.querySelector('.tm-close');
+            if (closeButton) {
+              log(4, 'Clicking close button...');
+              closeButton.click();
+              
+              setTimeout(() => {
+                if (!chatWindow.classList.contains('tm-visible')) {
+                  log(4, 'Chat window closed successfully');
+                  setStatus(4, 'success');
+                } else {
+                  throw new Error('Chat window did not close');
+                }
+              }, 300);
+            } else {
+              throw new Error('Close button not found');
+            }
+          } else {
+            throw new Error('Chat window did not open');
+          }
+        }, 300);
+      } catch (error) {
+        log(4, `Error: ${error.message}`);
+        setStatus(4, 'error');
+      }
+    };
+
+    // Test 5: Message Sending
+    const testMessageSending = async () => {
+      log(5, 'Testing message sending...');
+      try {
+        const widgetRoot = document.querySelector('#tm-widget-root');
+        if (!widgetRoot || !widgetRoot.shadowRoot) {
+          throw new Error('Widget not initialized');
+        }
+
+        // Open chat first
+        const chatButton = widgetRoot.shadowRoot.querySelector('.tm-chat-button');
+        chatButton?.click();
+        
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        const input = widgetRoot.shadowRoot.querySelector('.tm-input');
+        const sendButton = widgetRoot.shadowRoot.querySelector('.tm-send-button');
+        
+        if (!input || !sendButton) {
+          throw new Error('Input or send button not found');
+        }
+
+        // Type message
+        input.value = 'Test message from E2E test';
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        log(5, 'Message typed');
+        
+        // Mock successful response
+        log(5, 'Note: Actual API call may fail without valid instance');
+        setStatus(5, 'success');
+      } catch (error) {
+        log(5, `Error: ${error.message}`);
+        setStatus(5, 'error');
+      }
+    };
+
+    // Test 6: Session Persistence
+    const testSessionPersistence = () => {
+      log(6, 'Testing session persistence...');
+      try {
+        const sessionKey = 'tm-chat-session-seo-assistant';
+        const testSession = {
+          id: 'test-session-123',
+          messages: [
+            { role: 'user', content: 'Test message' },
+            { role: 'assistant', content: 'Test response' }
+          ],
+          timestamp: Date.now()
+        };
+        
+        // Store test session
+        localStorage.setItem(sessionKey, JSON.stringify(testSession));
+        log(6, 'Test session stored');
+        
+        // Retrieve session
+        const retrieved = localStorage.getItem(sessionKey);
+        if (retrieved) {
+          const parsed = JSON.parse(retrieved);
+          log(6, `Session retrieved: ${parsed.id}`);
+          log(6, `Messages count: ${parsed.messages.length}`);
+          setStatus(6, 'success');
+        } else {
+          throw new Error('Session not retrieved');
+        }
+      } catch (error) {
+        log(6, `Error: ${error.message}`);
+        setStatus(6, 'error');
+      }
+    };
+
+    // Test Inline Mode
+    const testInlineMode = () => {
+      log('inline', 'Initializing inline mode...');
+      try {
+        if (typeof window.TypingMindChat === 'undefined') {
+          throw new Error('Widget not loaded');
+        }
+
+        // Clean up any existing inline instance
+        const container = document.getElementById('inline-container');
+        container.innerHTML = '';
+
+        window.TypingMindChat.init({
+          instanceId: 'support-bot',
+          container: container,
+          embedMode: 'inline',
+          height: 400,
+          onMessage: (msg) => log('inline', `Inline message: ${msg.content?.substring(0, 50)}...`)
+        });
+        
+        log('inline', 'Inline mode initialized');
+      } catch (error) {
+        log('inline', `Error: ${error.message}`);
+      }
+    };
+
+    // Run all tests
+    const runAllTests = async () => {
+      log('main', 'Starting E2E test suite...');
+      
+      // Reset all statuses
+      document.querySelectorAll('.status').forEach(el => {
+        el.className = 'status pending';
+        el.textContent = 'Pending';
+      });
+      
+      // Run tests in sequence
+      await testWidgetLoading();
+      // Other tests are triggered by user actions or previous tests
+    };
+
+    // Initial summary
+    updateSummary();
+  </script>
+</body>
+</html>

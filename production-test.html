@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Production Test - TypingMind Chatbot Widget</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 40px 20px;
+      line-height: 1.6;
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+    }
+    .instance {
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    code {
+      background: #e9ecef;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 14px;
+    }
+    pre {
+      background: #212529;
+      color: #f8f9fa;
+      padding: 15px;
+      border-radius: 5px;
+      overflow-x: auto;
+    }
+    .status {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 14px;
+      margin-left: 10px;
+    }
+    .status.live {
+      background: #d4edda;
+      color: #155724;
+    }
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      margin-right: 10px;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    .inline-container {
+      width: 100%;
+      height: 500px;
+      border: 2px solid #007bff;
+      border-radius: 8px;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🚀 Production Widget Test</h1>
+  <p>This page loads the production widget from Cloudflare Workers.</p>
+  
+  <div class="instance">
+    <h2>SEO Assistant Bot <span class="status live">LIVE</span></h2>
+    <p>Instance ID: <code>seo-assistant</code></p>
+    <p>This instance is configured for popup mode and will appear at the bottom-right.</p>
+    <pre><code>TypingMindChat.init({
+  instanceId: 'seo-assistant'
+});</code></pre>
+    <button onclick="initSEOBot()">Initialize SEO Bot</button>
+  </div>
+
+  <div class="instance">
+    <h2>Customer Support Bot <span class="status live">LIVE</span></h2>
+    <p>Instance ID: <code>support-bot</code></p>
+    <p>This instance is configured for inline mode and will appear below.</p>
+    <pre><code>TypingMindChat.init({
+  instanceId: 'support-bot',
+  container: document.getElementById('support-container')
+});</code></pre>
+    <button onclick="initSupportBot()">Initialize Support Bot</button>
+    <div id="support-container" class="inline-container"></div>
+  </div>
+
+  <!-- Production Widget Script -->
+  <script src="https://typingmind-chatbot.webfonts.workers.dev/widget.js"></script>
+  
+  <script>
+    // SEO Assistant Bot (Popup Mode)
+    function initSEOBot() {
+      try {
+        // Clean up any existing instance
+        const existing = document.querySelector('#tm-widget-root');
+        if (existing) {
+          existing.remove();
+        }
+        
+        TypingMindChat.init({
+          instanceId: 'seo-assistant',
+          onOpen: () => console.log('SEO Bot opened'),
+          onClose: () => console.log('SEO Bot closed'),
+          onMessage: (message) => console.log('SEO Bot message:', message)
+        });
+        
+        console.log('SEO Assistant Bot initialized successfully');
+      } catch (error) {
+        console.error('Failed to initialize SEO Bot:', error);
+        alert('Failed to initialize SEO Bot. Check console for details.');
+      }
+    }
+
+    // Customer Support Bot (Inline Mode)
+    function initSupportBot() {
+      try {
+        const container = document.getElementById('support-container');
+        
+        // Clear container
+        container.innerHTML = '';
+        
+        TypingMindChat.init({
+          instanceId: 'support-bot',
+          container: container,
+          onMessage: (message) => console.log('Support Bot message:', message)
+        });
+        
+        console.log('Customer Support Bot initialized successfully');
+      } catch (error) {
+        console.error('Failed to initialize Support Bot:', error);
+        alert('Failed to initialize Support Bot. Check console for details.');
+      }
+    }
+
+    // Log widget availability
+    window.addEventListener('load', () => {
+      if (typeof TypingMindChat !== 'undefined') {
+        console.log('✅ TypingMind Chat Widget loaded successfully');
+        console.log('Available methods:', Object.keys(TypingMindChat));
+      } else {
+        console.error('❌ TypingMind Chat Widget failed to load');
+      }
+    });
+  </script>
+</body>
+</html>
