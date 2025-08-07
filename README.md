@@ -118,17 +118,52 @@ VALUES ('my-bot', '#28a745', 'popup');
 
 See [ARCHITECTURE.md](./ARCHITECTURE.md) for detailed system design.
 
+## Testing
+
+The project includes comprehensive test coverage with 283 tests:
+
+```bash
+# Run all tests
+npm test
+
+# Run widget tests with coverage
+npm run test:widget -- --coverage
+
+# Run specific test suite
+npm run test:widget -- --testPathPattern="state-manager"
+```
+
+### Test Statistics
+- **Total Tests**: 283 (274 passing)
+- **Test Suites**: 12
+- **Code Coverage**: ~73%
+- **Unit Tests**: 267 tests across all modules
+- **Integration Tests**: 16 tests for module interactions
+
+### Test Structure
+- **Core Modules**: StateManager (21), ConfigManager (20), ApiClient (14)
+- **Components**: ChatButton (20), ChatWindow (31), MessageList (26), InputArea (30)
+- **Utilities**: DomUtils (42), Storage (30), MarkdownParser (36)
+- **Integration**: Simple (7), Widget (9)
+
+### Testing Resources
+- **E2E Test Page**: https://typingmind-chatbot.webfonts.workers.dev/test/e2e
+- **Production Test**: https://typingmind-chatbot.webfonts.workers.dev/test/production
+- **Documentation**: [docs/TESTING.md](./docs/TESTING.md)
+
 ## Documentation
 
 - [ARCHITECTURE.md](./ARCHITECTURE.md) - System architecture and design
 - [CHANGELOG.md](./CHANGELOG.md) - Version history and migration guides
 - [CLAUDE.md](./CLAUDE.md) - Development guide for Claude Code
+- [docs/TESTING.md](./docs/TESTING.md) - Comprehensive testing guide
 
 ## Version
 
-Current version: **2.0.0**
+Current version: **2.3.0**
 
-Clean multi-instance architecture with no backward compatibility.
+- **2.3.0**: Modular architecture with comprehensive test suite (283 tests, ~73% coverage)
+- **2.0.0**: Clean multi-instance architecture with no backward compatibility
 
 ## License
 

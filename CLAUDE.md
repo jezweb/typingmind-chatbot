@@ -96,20 +96,44 @@ TypingMind API details:
 
 ```
 /
-├── worker.js              # Main Cloudflare Worker (clean, no legacy code)
-├── schema-v2.sql          # D1 database schema (instance-based)
+├── worker.js              # Main Cloudflare Worker (72 lines, modular)
+├── lib/                   # Worker modules
+│   ├── security.js        # CORS, headers, domain validation
+│   ├── database.js        # D1 database operations
+│   ├── rate-limiter.js    # KV-based rate limiting
+│   ├── auth.js            # Admin authentication
+│   └── routes/            # Route handlers
+│       ├── chat.js        # Chat API endpoints
+│       ├── widget.js      # Widget delivery
+│       ├── admin.js       # Admin panel routes
+│       └── admin-crud.js  # Admin CRUD operations
+├── schema-v2.sql          # D1 database schema
 ├── fresh-test-data.sql    # Sample instance configurations
 ├── widget/                # Embeddable chat widget
-│   ├── src/              
-│   │   ├── widget.js      # Main widget code (instanceId only)
-│   │   ├── styles.css     # Widget styles with CSS variables
-│   │   └── icons.js       # SVG icons as JavaScript strings
+│   ├── src/               # Widget source modules
+│   │   ├── core/          # Core functionality
+│   │   │   ├── state-manager.js    # State management
+│   │   │   ├── config-manager.js   # Configuration
+│   │   │   └── api-client.js       # API communication
+│   │   ├── components/    # UI components
+│   │   │   ├── chat-button.js      # Floating button
+│   │   │   ├── chat-window.js      # Window container
+│   │   │   ├── message-list.js     # Message display
+│   │   │   └── input-area.js       # Input handling
+│   │   ├── utils/         # Utilities
+│   │   │   ├── dom-utils.js        # DOM helpers
+│   │   │   ├── markdown-parser.js  # Markdown parsing
+│   │   │   └── storage.js          # LocalStorage wrapper
+│   │   ├── widget.js      # Main orchestrator
+│   │   ├── styles.css     # Widget styles
+│   │   └── icons.js       # SVG icons
 │   ├── dist/              # Built widget files
-│   │   └── widget.min.js  # Production bundle (~23KB)
-│   ├── build.js           # Build script for widget
-│   └── demo.html          # Testing page
+│   │   └── widget.min.js  # Production bundle (~38KB)
+│   ├── build.js           # Rollup build script
+│   ├── rollup.config.js   # Rollup configuration
+│   └── test-setup.js      # Jest test environment
 ├── assets/                # Static assets served by worker
-│   └── test/             # Test pages
+│   └── test/              # Test pages
 │       ├── index.html     # Test page index
 │       ├── comprehensive.html # Comprehensive widget test
 │       ├── automated.html # Automated test page
@@ -117,12 +141,16 @@ TypingMind API details:
 │       └── embed.html     # Production embed test
 ├── wrangler.toml          # Cloudflare Worker configuration
 ├── deploy-widget.sh       # Widget deployment script
-├── test-clean-system.html # Local test page for multi-instance setup
-├── admin.js               # Admin panel JavaScript functions
+├── jest.config.js         # Jest configuration for worker
+├── jest.config.widget.js  # Jest configuration for widget
+├── package.json           # Dependencies and scripts
+├── production-test.html   # Production testing page
+├── test-e2e-production.html # E2E test suite
 └── docs/                  # Documentation
     ├── ARCHITECTURE.md    # Comprehensive architecture guide
     ├── CHANGELOG.md       # Version history and upgrade guides
-    └── CLAUDE.md          # This file
+    ├── CLAUDE.md          # This file
+    └── TESTING.md         # Testing documentation
 ```
 
 ## Security Considerations
@@ -262,6 +290,29 @@ TypingMindChat.init({
 - A/B testing features
 
 ## Testing
+
+### Test Infrastructure
+The project includes comprehensive test coverage:
+- **283 total tests** with 274 passing (96.8% pass rate)
+- **~73% code coverage** across all modules
+- **12 test suites** covering worker and widget code
+- **Jest with jsdom** for DOM testing support
+- **E2E test pages** for production testing
+
+### Running Tests
+```bash
+# Run all tests
+npm test
+
+# Run widget tests with coverage
+npm run test:widget -- --coverage
+
+# Run specific test suite
+npm run test:widget -- --testPathPattern="state-manager"
+
+# Run worker tests
+npm run test:worker
+```
 
 ### Test Instances
 The system includes two test instances:
@@ -417,4 +468,4 @@ Test pages are automatically deployed with the worker as static assets in the `a
 
 See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
 
-Current version: **2.3.0** (Modular Architecture Release - Complete worker.js refactoring with 95.8% size reduction, 133 comprehensive tests, and successful production deployment)
+Current version: **2.4.0** (Widget Testing & Modularization Complete - 283 tests with ~73% coverage, modular widget architecture, and successful production deployment)

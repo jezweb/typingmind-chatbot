@@ -106,6 +106,15 @@ CREATE TABLE instance_themes (
   border_radius TEXT DEFAULT '8px',
   FOREIGN KEY (instance_id) REFERENCES agent_instances(id) ON DELETE CASCADE
 );
+
+-- Welcome messages configuration
+CREATE TABLE instance_welcome_messages (
+  instance_id TEXT PRIMARY KEY,
+  welcome_message TEXT DEFAULT 'Hello! How can I help you today?',
+  show_on_new_session BOOLEAN DEFAULT 1,
+  show_on_return BOOLEAN DEFAULT 0,
+  FOREIGN KEY (instance_id) REFERENCES agent_instances(id) ON DELETE CASCADE
+);
 ```
 
 ## Component Architecture
@@ -119,10 +128,11 @@ The worker serves as the API gateway and handles request routing. **Modularizati
 - **lib/database.js**: D1 database operations, instance CRUD operations, configuration queries
 - **lib/rate-limiter.js**: KV-based rate limiting, per-instance and per-session limits
 - **lib/auth.js**: Admin authentication, session management, cookie handling
-- **lib/routes/chat.js**: Chat API endpoints (/chat, /instance/:id)
+- **lib/routes/chat.js**: Chat API endpoints (/chat, /instance/:id) with metric tracking
 - **lib/routes/widget.js**: Widget delivery endpoint (/widget.js)
 - **lib/routes/admin.js**: Admin panel routes (login, dashboard, JS delivery)
 - **lib/routes/admin-crud.js**: Admin CRUD operations (create, edit, delete, clone)
+- **lib/routes/status.js**: Instance status endpoint with metrics and monitoring
 - **lib/templates/admin-layout.js**: Base layouts for admin pages and forms
 - **lib/templates/admin-pages.js**: Login and dashboard page templates
 - **lib/templates/admin-forms.js**: Create and edit instance form templates
@@ -140,6 +150,7 @@ Key endpoints:
 - `GET /instance/:id` - Get instance configuration
 - `POST /chat` - Handle chat messages
 - `GET /widget.js` - Serve the widget code
+- `GET /status/:id` - Instance status and metrics (JSON or HTML)
 - `/admin/*` - Admin panel routes
 
 ### 2. Widget (widget/src/widget.js)
@@ -151,6 +162,9 @@ The widget is a self-contained JavaScript module that:
 - **Dual Embed Modes**: Supports both popup and inline modes
 - **Session Management**: Persists conversations in localStorage
 - **Responsive Design**: Works on desktop and mobile devices
+- **Welcome Messages**: Shows customizable messages for new/returning users
+- **Typing Indicators**: Displays animated dots while processing messages
+- **Modular Architecture**: Split into 11 focused modules (state, config, API, UI components)
 
 Widget initialization:
 ```javascript
@@ -328,6 +342,56 @@ sequenceDiagram
    npm run build:widget
    ./deploy-widget.sh
    ```
+
+## New Features (v2.6.0)
+
+### Welcome Messages
+
+Customizable welcome messages shown to users when they open the chat:
+
+- **Per-instance configuration**: Each instance can have its own welcome message
+- **Smart display logic**: Show different messages for new vs returning users
+- **Session tracking**: Messages shown once per browser session
+- **Admin configuration**: Easily manage messages via admin panel
+
+Configuration stored in `instance_welcome_messages` table:
+- `welcome_message`: The text to display
+- `show_on_new_session`: Show to first-time visitors
+- `show_on_return`: Show to returning visitors
+
+### Typing Indicators
+
+Visual feedback while the chatbot processes messages:
+
+- **Three animated dots**: Appear below user's message
+- **Smooth animations**: Fade in/out transitions
+- **Automatic management**: Show during API calls, hide when response arrives
+- **Works everywhere**: Both popup and inline modes
+
+Implementation leverages existing `showLoading()`/`hideLoading()` methods in the message list component.
+
+### Instance Status Page
+
+Real-time monitoring and metrics for each instance:
+
+**Endpoints**:
+- `GET /status/:instanceId` - JSON API with raw metrics
+- `GET /status/:instanceId?format=html` - Human-readable HTML dashboard
+
+**Metrics tracked**:
+- **Response time**: Average of last 10 requests
+- **Uptime percentage**: Success rate of all requests
+- **Request counts**: Total, successful, and failed
+- **Rate limit usage**: Current usage and remaining quota
+- **Error tracking**: Last error message and timestamp
+
+**Features**:
+- Auto-refreshing HTML view (30-second intervals)
+- Visual progress bars for rate limits
+- Color-coded status indicators
+- Responsive design for mobile viewing
+
+Metrics stored in KV with 1-hour TTL using pattern `status:{instanceId}:metrics`.
 
 ## Widget Embed Modes
 

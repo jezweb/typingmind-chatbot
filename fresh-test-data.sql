@@ -25,6 +25,10 @@ INSERT INTO instance_features (instance_id, image_upload, markdown, persist_sess
 INSERT INTO instance_themes (instance_id, primary_color, position, width, embed_mode) VALUES
   ('seo-assistant', '#007bff', 'bottom-right', 380, 'popup');
 
+-- Configure welcome message
+INSERT INTO instance_welcome_messages (instance_id, welcome_message, show_on_new_session, show_on_return) VALUES
+  ('seo-assistant', 'Hello! I''m your SEO Assistant. I can help you with keyword research, content optimization, and technical SEO. What would you like to work on today?', 1, 0);
+
 -- Test instance 2: Support Bot (inline mode)
 INSERT INTO agent_instances (id, typingmind_agent_id, name, api_key) VALUES (
   'support-bot',
@@ -44,6 +48,10 @@ INSERT INTO instance_features (instance_id, image_upload, markdown, persist_sess
 
 INSERT INTO instance_themes (instance_id, primary_color, position, width, embed_mode) VALUES
   ('support-bot', '#28a745', 'bottom-right', 600, 'inline');
+
+-- Configure welcome message
+INSERT INTO instance_welcome_messages (instance_id, welcome_message, show_on_new_session, show_on_return) VALUES
+  ('support-bot', 'Welcome to our support center! I''m here to help you with any questions or issues you may have. How can I assist you today?', 1, 0);
 
 -- Verify the data
 SELECT 

@@ -5,6 +5,53 @@ All notable changes to the TypingMind Multi-Instance Chatbot Platform will be do
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.0] - 2025-08-07 - New Features: Welcome Messages, Typing Indicators, Instance Status Page
+
+### 🎯 Added
+- **Welcome Messages Feature** - Customizable welcome messages per instance
+  - Database table `instance_welcome_messages` with configuration options
+  - Show different messages for new vs returning users
+  - Session-based tracking to show once per session
+  - Admin panel integration for message management
+  - Test page: test-welcome-message.html
+
+- **Typing Indicators** - Visual feedback while waiting for responses
+  - Three animated dots appear when message is being processed
+  - Leverages existing showLoading/hideLoading methods
+  - Works in both popup and inline embed modes
+  - Smooth fade-in/out animations
+  - Test page: test-typing-indicator.html
+
+- **Instance Status Page** - Real-time monitoring and metrics
+  - JSON API endpoint: `/status/:instanceId`
+  - HTML status page: `/status/:instanceId?format=html`
+  - Metrics tracked: response time, uptime, request counts
+  - Rate limit monitoring with usage visualization
+  - Error tracking with last error display
+  - Auto-refreshing HTML view (30-second intervals)
+  - Test page: test-status-page.html
+
+### 🔧 Changed
+- **Database schema updates**:
+  - Added `instance_welcome_messages` table
+  - Welcome message data included in instance configuration queries
+- **Chat route enhancements**:
+  - Added metric tracking for all requests
+  - Response time measurement
+  - Success/failure tracking
+  - Timeout error tracking
+- **Widget improvements**:
+  - Welcome message display logic in state manager
+  - Session detection using sessionStorage
+  - Typing indicator integration in message flow
+
+### 📊 Metrics
+- **New database table**: 1 table with 4 fields
+- **New route module**: lib/routes/status.js (454 lines)
+- **Enhanced modules**: 5 existing modules updated
+- **Test files added**: 3 comprehensive test pages
+- **Status page features**: 7 key metrics displayed
+
 ## [2.5.0] - 2025-08-07 - Admin Routes Refactoring
 
 ### 🔧 Changed
