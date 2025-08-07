@@ -29,6 +29,16 @@ router.options('*', (request) => {
 router.get('/instance/:id', handleGetInstance);
 router.post('/chat', handleChat);
 
+// Status route
+router.get('/status/:id', async (request, env, ctx) => {
+  const { params } = request;
+  const { id } = params;
+  
+  // Import the status handler dynamically to avoid circular dependencies
+  const { handleInstanceStatus } = await import('./lib/routes/status.js');
+  return handleInstanceStatus(request, env, ctx, id);
+});
+
 // Widget delivery
 router.get('/widget.js', handleWidgetDelivery);
 

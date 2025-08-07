@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Instance Status Page Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #333;
+      border-bottom: 2px solid #007bff;
+      padding-bottom: 10px;
+    }
+    .info {
+      background-color: #e3f2fd;
+      border: 1px solid #1976d2;
+      padding: 15px;
+      border-radius: 4px;
+      margin: 20px 0;
+    }
+    .test-section {
+      margin: 30px 0;
+      padding: 20px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    .status-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      margin: 20px 0;
+    }
+    .status-link {
+      display: inline-block;
+      padding: 10px 20px;
+      background-color: #007bff;
+      color: white;
+      text-decoration: none;
+      border-radius: 4px;
+      transition: background-color 0.3s;
+    }
+    .status-link:hover {
+      background-color: #0056b3;
+    }
+    .status-iframe {
+      width: 100%;
+      height: 700px;
+      border: 2px solid #ddd;
+      border-radius: 4px;
+      margin-top: 20px;
+    }
+    .json-response {
+      background-color: #f8f9fa;
+      border: 1px solid #dee2e6;
+      padding: 15px;
+      border-radius: 4px;
+      margin-top: 20px;
+      font-family: monospace;
+      font-size: 14px;
+      white-space: pre-wrap;
+      overflow-x: auto;
+    }
+    button {
+      padding: 10px 20px;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 5px;
+    }
+    button:hover {
+      background-color: #218838;
+    }
+    .metrics-info {
+      background-color: #fff3cd;
+      border: 1px solid #856404;
+      padding: 15px;
+      border-radius: 4px;
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Instance Status Page Test</h1>
+    
+    <div class="info">
+      <h3>Testing Instance Status Page</h3>
+      <p>This page tests the new status endpoint that provides:</p>
+      <ul>
+        <li>Real-time instance status (online/offline)</li>
+        <li>Average response time metrics</li>
+        <li>Uptime percentage</li>
+        <li>Rate limit usage and remaining quotas</li>
+        <li>Error tracking and last error display</li>
+        <li>Both JSON API and HTML view support</li>
+      </ul>
+    </div>
+
+    <div class="metrics-info">
+      <h3>How Metrics Work</h3>
+      <p>The status page tracks metrics for each instance:</p>
+      <ul>
+        <li><strong>Response Time:</strong> Average of last 10 requests</li>
+        <li><strong>Uptime:</strong> Percentage of successful vs total requests</li>
+        <li><strong>Rate Limits:</strong> Current usage for both hourly and session limits</li>
+        <li><strong>Error Tracking:</strong> Displays the last error message if any</li>
+      </ul>
+      <p>Send some chat messages to see the metrics update!</p>
+    </div>
+
+    <div class="test-section">
+      <h2>Status Endpoints</h2>
+      <div class="status-links">
+        <a href="http://localhost:8787/status/seo-assistant" target="_blank" class="status-link">
+          SEO Assistant - JSON
+        </a>
+        <a href="http://localhost:8787/status/seo-assistant?format=html" target="_blank" class="status-link">
+          SEO Assistant - HTML
+        </a>
+        <a href="http://localhost:8787/status/support-bot" target="_blank" class="status-link">
+          Support Bot - JSON
+        </a>
+        <a href="http://localhost:8787/status/support-bot?format=html" target="_blank" class="status-link">
+          Support Bot - HTML
+        </a>
+      </div>
+    </div>
+
+    <div class="test-section">
+      <h2>Embedded Status Page</h2>
+      <p>HTML status page for SEO Assistant (auto-refreshes every 30 seconds):</p>
+      <iframe src="http://localhost:8787/status/seo-assistant?format=html" class="status-iframe"></iframe>
+    </div>
+
+    <div class="test-section">
+      <h2>JSON API Response</h2>
+      <button onclick="fetchStatus('seo-assistant')">Fetch SEO Assistant Status</button>
+      <button onclick="fetchStatus('support-bot')">Fetch Support Bot Status</button>
+      <button onclick="generateTraffic()">Generate Test Traffic</button>
+      <div id="json-response" class="json-response" style="display:none;"></div>
+    </div>
+
+    <div class="test-section">
+      <h2>Generate Test Traffic</h2>
+      <p>Click the button below to send test messages and see metrics update:</p>
+      <button onclick="sendTestMessage('seo-assistant')">Send to SEO Assistant</button>
+      <button onclick="sendTestMessage('support-bot')">Send to Support Bot</button>
+      <button onclick="sendFailingMessage()">Send Failing Request</button>
+    </div>
+  </div>
+
+  <script>
+    async function fetchStatus(instanceId) {
+      try {
+        const response = await fetch(`http://localhost:8787/status/${instanceId}`);
+        const data = await response.json();
+        
+        const responseDiv = document.getElementById('json-response');
+        responseDiv.textContent = JSON.stringify(data, null, 2);
+        responseDiv.style.display = 'block';
+      } catch (error) {
+        console.error('Error fetching status:', error);
+        alert('Error fetching status: ' + error.message);
+      }
+    }
+
+    async function sendTestMessage(instanceId) {
+      try {
+        const response = await fetch('http://localhost:8787/chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Origin': 'http://localhost:8787'
+          },
+          body: JSON.stringify({
+            instanceId: instanceId,
+            messages: [{ role: 'user', content: 'Test message for metrics' }],
+            sessionId: 'test-' + Date.now()
+          })
+        });
+        
+        const data = await response.json();
+        if (response.ok) {
+          alert('Message sent successfully! Check the status page for updated metrics.');
+        } else {
+          alert('Error: ' + (data.error || 'Unknown error'));
+        }
+      } catch (error) {
+        console.error('Error sending message:', error);
+        alert('Error sending message: ' + error.message);
+      }
+    }
+
+    async function sendFailingMessage() {
+      try {
+        const response = await fetch('http://localhost:8787/chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Origin': 'http://invalid-domain.com'
+          },
+          body: JSON.stringify({
+            instanceId: 'seo-assistant',
+            messages: [{ role: 'user', content: 'This should fail' }],
+            sessionId: 'fail-test'
+          })
+        });
+        
+        const data = await response.json();
+        alert('Response: ' + (data.error || 'Unexpected success'));
+      } catch (error) {
+        console.error('Error:', error);
+        alert('Error: ' + error.message);
+      }
+    }
+
+    async function generateTraffic() {
+      alert('Generating test traffic... This will send 5 messages with varying delays.');
+      
+      for (let i = 0; i < 5; i++) {
+        setTimeout(async () => {
+          await sendTestMessage(i % 2 === 0 ? 'seo-assistant' : 'support-bot');
+          console.log(`Sent message ${i + 1} of 5`);
+        }, i * 2000); // 2 second intervals
+      }
+    }
+
+    // Auto-refresh JSON status every 10 seconds if visible
+    let refreshInterval;
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        clearInterval(refreshInterval);
+      } else {
+        refreshInterval = setInterval(() => {
+          const responseDiv = document.getElementById('json-response');
+          if (responseDiv.style.display !== 'none') {
+            // Re-fetch the last selected instance
+            const lastButton = document.querySelector('button[onclick*="fetchStatus"]');
+            if (lastButton) {
+              lastButton.click();
+            }
+          }
+        }, 10000);
+      }
+    });
+  </script>
+</body>
+</html>
