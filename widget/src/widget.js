@@ -325,11 +325,36 @@ class TypingMindChatWidget {
           timestamp: new Date().toISOString()
         };
         
-        this.stateManager.addMessage(assistantMessage);
-        this.messageList.addMessage(assistantMessage);
+        // Check if streaming is enabled
+        const streamingEnabled = this.configManager.get('enableStreaming', true);
         
-        // Trigger callback
-        this.triggerMessageCallback(assistantMessage);
+        if (streamingEnabled) {
+          // Hide loading indicator before streaming starts
+          this.messageList.hideLoading();
+          
+          // Add message to state before streaming
+          this.stateManager.addMessage(assistantMessage);
+          
+          // Stream the message with animation
+          await this.messageList.streamMessage(assistantMessage, {
+            speed: this.configManager.get('streamingSpeed', 40),
+            mode: this.configManager.get('streamingMode', 'word'),
+            onStart: () => {
+              // Loading already hidden above
+            },
+            onComplete: () => {
+              // Trigger callback after streaming completes
+              this.triggerMessageCallback(assistantMessage);
+            }
+          });
+        } else {
+          // Display message instantly (original behavior)
+          this.stateManager.addMessage(assistantMessage);
+          this.messageList.addMessage(assistantMessage);
+          
+          // Trigger callback
+          this.triggerMessageCallback(assistantMessage);
+        }
       }
       
     } catch (error) {
@@ -337,6 +362,7 @@ class TypingMindChatWidget {
       this.messageList.showError(error.message || 'Failed to send message. Please try again.');
     } finally {
       this.stateManager.setLoading(false);
+      // Always ensure loading indicator is hidden
       this.messageList.hideLoading();
     }
   }

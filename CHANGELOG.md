@@ -5,6 +5,48 @@ All notable changes to the TypingMind Multi-Instance Chatbot Platform will be do
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.7.0] - 2025-08-07 - Client-Side Streaming Simulation
+
+### 🎯 Added
+- **Client-Side Streaming Simulation** - Progressive display of AI responses
+  - Word-by-word and character-by-character display modes
+  - Configurable animation speed (10-200ms between chunks)
+  - Enable/disable toggle for instant vs streaming display
+  - Maintains markdown formatting during streaming
+  - Hides typing indicator when streaming starts
+  - Test page: test-streaming-simulation.html
+
+### 🔧 Changed
+- **Message List Component**:
+  - Added `streamMessage` method for progressive text display
+  - Splits content by words or characters based on mode
+  - Supports onStart and onComplete callbacks
+  
+- **Widget Orchestrator**:
+  - Modified sendMessage to use streaming when enabled
+  - Integrated with config manager for streaming settings
+  - Ensures loading indicator is hidden before streaming
+
+- **Configuration Manager**:
+  - Added `enableStreaming` flag (default: true)
+  - Added `streamingSpeed` setting (default: 40ms)
+  - Added `streamingMode` setting (default: 'word')
+
+### 📊 Metrics
+- **New method**: streamMessage in message-list.js (67 lines)
+- **Widget modifications**: 30 lines in widget.js
+- **Configuration options**: 3 new settings
+- **Test page features**: Side-by-side comparison, speed controls
+- **Bundle size**: 40.24 KB production bundle
+
+### 🚀 Implementation Details
+Since the TypingMind API doesn't support real streaming, this feature simulates it by:
+1. Receiving the complete response from the API
+2. Hiding the typing indicator when ready to stream
+3. Progressively displaying text chunk by chunk
+4. Preserving markdown formatting throughout
+5. Triggering callbacks appropriately
+
 ## [2.6.0] - 2025-08-07 - New Features: Welcome Messages, Typing Indicators, Instance Status Page
 
 ### 🎯 Added

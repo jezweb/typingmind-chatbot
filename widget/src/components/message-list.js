@@ -69,6 +69,75 @@ export class MessageList {
     this.scrollToBottom();
   }
   
+  // Stream message with animation
+  async streamMessage(message, options = {}) {
+    const {
+      speed = 40,        // milliseconds between chunks
+      mode = 'word',     // 'word' or 'character'
+      onStart = null,    // callback when streaming starts
+      onComplete = null  // callback when streaming completes
+    } = options;
+    
+    if (!this.element) return;
+    
+    // Clear welcome message on first real message
+    const welcomeMessage = this.element.querySelector('.tm-welcome');
+    if (welcomeMessage) {
+      welcomeMessage.remove();
+    }
+    
+    // Create the message element with empty content initially
+    const emptyMessage = { ...message, content: '' };
+    const messageEl = this.createMessageElement(emptyMessage);
+    this.element.appendChild(messageEl);
+    const messageIndex = this.messages.length;
+    this.messages.push({ message: emptyMessage, element: messageEl });
+    
+    // Get the content element to update
+    const contentEl = messageEl.querySelector('.tm-message-content');
+    if (!contentEl) return;
+    
+    // Call onStart callback
+    if (onStart) onStart();
+    
+    // Split content into chunks based on mode
+    const chunks = mode === 'word' 
+      ? message.content.split(/(\s+)/) // Split by whitespace but keep the whitespace
+      : message.content.split('');      // Split into characters
+    
+    // Stream the content
+    let currentContent = '';
+    for (let i = 0; i < chunks.length; i++) {
+      currentContent += chunks[i];
+      
+      // Update the message content
+      this.messages[messageIndex].message.content = currentContent;
+      
+      // Clear and re-render formatted content
+      contentEl.innerHTML = '';
+      const formattedContent = this.formatMessage(currentContent);
+      contentEl.appendChild(formattedContent);
+      
+      // Scroll to bottom
+      this.scrollToBottom();
+      
+      // Wait before showing next chunk (skip empty chunks)
+      if (chunks[i].trim() || mode === 'character') {
+        await new Promise(resolve => setTimeout(resolve, speed));
+      }
+    }
+    
+    // Ensure final content matches exactly
+    this.messages[messageIndex].message.content = message.content;
+    contentEl.innerHTML = '';
+    const finalContent = this.formatMessage(message.content);
+    contentEl.appendChild(finalContent);
+    this.scrollToBottom();
+    
+    // Call onComplete callback
+    if (onComplete) onComplete();
+  }
+  
   // Create message element
   createMessageElement(message) {
     const div = document.createElement('div');

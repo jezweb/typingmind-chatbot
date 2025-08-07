@@ -12,7 +12,11 @@ export class ConfigManager {
       width: 380,
       height: null, // null means use CSS default
       embedMode: 'popup',
-      container: null
+      container: null,
+      // Streaming simulation options
+      enableStreaming: true,      // Enable/disable streaming simulation
+      streamingSpeed: 40,         // Milliseconds between chunks
+      streamingMode: 'word'       // 'word' or 'character'
     };
     
     // Merge user config with defaults
@@ -33,8 +37,8 @@ export class ConfigManager {
   }
   
   // Get configuration value
-  get(key) {
-    return this.config[key];
+  get(key, defaultValue = undefined) {
+    return this.config[key] !== undefined ? this.config[key] : defaultValue;
   }
   
   // Set configuration value

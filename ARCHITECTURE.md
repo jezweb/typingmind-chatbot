@@ -393,6 +393,47 @@ Real-time monitoring and metrics for each instance:
 
 Metrics stored in KV with 1-hour TTL using pattern `status:{instanceId}:metrics`.
 
+## New Features (v2.7.0)
+
+### Client-Side Streaming Simulation
+
+Since the TypingMind API doesn't support real streaming, this feature simulates progressive text display on the client side:
+
+**How it works**:
+1. Receives the complete response from the API
+2. Hides the typing indicator when ready to stream
+3. Progressively displays text chunk by chunk
+4. Maintains markdown formatting throughout the display
+
+**Configuration options** in `config-manager.js`:
+- `enableStreaming`: Enable/disable streaming simulation (default: true)
+- `streamingSpeed`: Milliseconds between chunks (default: 40ms)
+- `streamingMode`: Display mode - 'word' or 'character' (default: 'word')
+
+**Implementation**:
+- **Message List Component** (`message-list.js`):
+  - Added `streamMessage()` method for progressive display
+  - Splits content by words or characters based on mode
+  - Supports onStart and onComplete callbacks
+  - Preserves markdown formatting during streaming
+
+- **Widget Orchestrator** (`widget.js`):
+  - Modified `sendMessage()` to check streaming configuration
+  - Hides loading indicator before streaming starts
+  - Calls `streamMessage()` when enabled, otherwise displays instantly
+
+**Usage example**:
+```javascript
+TypingMindChat.init({
+  instanceId: 'support-bot',
+  enableStreaming: true,        // Enable streaming simulation
+  streamingSpeed: 50,           // 50ms between chunks
+  streamingMode: 'word'         // Word-by-word display
+});
+```
+
+**Test page**: `test-streaming-simulation.html` provides side-by-side comparison of streaming vs instant display with adjustable controls.
+
 ## Widget Embed Modes
 
 ### 1. Popup Mode (Default)
