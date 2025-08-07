@@ -68,6 +68,15 @@ CREATE TABLE IF NOT EXISTS instance_themes (
   FOREIGN KEY (instance_id) REFERENCES agent_instances(id) ON DELETE CASCADE
 );
 
+-- Welcome messages table
+CREATE TABLE IF NOT EXISTS instance_welcome_messages (
+  instance_id TEXT PRIMARY KEY,
+  welcome_message TEXT DEFAULT 'Hello! How can I help you today?',
+  show_on_new_session BOOLEAN DEFAULT 1,
+  show_on_return BOOLEAN DEFAULT 0,
+  FOREIGN KEY (instance_id) REFERENCES agent_instances(id) ON DELETE CASCADE
+);
+
 -- Create indexes for performance
 CREATE INDEX IF NOT EXISTS idx_instance_domains_instance_id ON instance_domains(instance_id);
 CREATE INDEX IF NOT EXISTS idx_instance_paths_instance_id ON instance_paths(instance_id);
@@ -122,3 +131,9 @@ INSERT INTO instance_themes (instance_id, primary_color, position, width, embed_
   ('seo-bot-newcastle', '#007bff', 'bottom-right', 380, 'popup'),
   ('seo-bot-blog', '#28a745', 'bottom-left', 400, 'popup'), -- Different color and position
   ('brand-discovery-embed', '#007bff', 'bottom-right', 600, 'inline');
+
+-- Set up welcome messages
+INSERT INTO instance_welcome_messages (instance_id, welcome_message, show_on_new_session, show_on_return) VALUES
+  ('seo-bot-newcastle', 'Welcome to Newcastle SEO! I''m here to help you optimize your website for search engines. What can I assist you with today?', 1, 0),
+  ('seo-bot-blog', 'Hi there! I''m your SEO blog assistant. Ask me anything about content optimization, keyword research, or SEO best practices!', 1, 0),
+  ('brand-discovery-embed', 'Welcome! I''m the Brand Discovery Agent. Let me help you explore and develop your brand identity.', 1, 0);

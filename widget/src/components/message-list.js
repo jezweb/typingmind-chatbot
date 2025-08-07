@@ -241,6 +241,20 @@ export class MessageList {
     }, 5000);
   }
   
+  // Show welcome message
+  showWelcomeMessage(text) {
+    if (!this.element || !text) return;
+    
+    const welcomeMessage = {
+      role: 'assistant',
+      content: text,
+      timestamp: new Date().toISOString(),
+      isWelcome: true
+    };
+    
+    this.addMessage(welcomeMessage);
+  }
+  
   // Scroll to bottom
   scrollToBottom() {
     if (this.element) {

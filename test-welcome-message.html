@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome Message Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #333;
+    }
+    .info {
+      background-color: #e3f2fd;
+      border: 1px solid #1976d2;
+      padding: 15px;
+      border-radius: 4px;
+      margin: 20px 0;
+    }
+    .test-section {
+      margin: 30px 0;
+      padding: 20px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    button {
+      background-color: #1976d2;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 5px;
+    }
+    button:hover {
+      background-color: #1565c0;
+    }
+    #inline-container {
+      height: 600px;
+      border: 2px dashed #999;
+      background-color: #fafafa;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Welcome Message Test</h1>
+    
+    <div class="info">
+      <h3>Testing Welcome Message Feature</h3>
+      <p>This page tests the welcome message functionality:</p>
+      <ul>
+        <li>Messages should appear when opening chat for the first time</li>
+        <li>Welcome messages should respect the "show_on_new_session" setting</li>
+        <li>Session persistence should be maintained</li>
+      </ul>
+    </div>
+
+    <div class="test-section">
+      <h2>Test Actions</h2>
+      <button onclick="clearSessionStorage()">Clear Session Storage</button>
+      <button onclick="clearLocalStorage()">Clear Local Storage</button>
+      <button onclick="clearAllStorage()">Clear All Storage</button>
+      <button onclick="location.reload()">Reload Page</button>
+    </div>
+
+    <div class="test-section">
+      <h2>Popup Mode Test</h2>
+      <p>Click the chat button in the bottom-right corner to test popup mode with welcome message.</p>
+    </div>
+
+    <div class="test-section">
+      <h2>Inline Mode Test</h2>
+      <p>The chat widget below should show a welcome message when first loaded:</p>
+      <div id="inline-container"></div>
+    </div>
+  </div>
+
+  <!-- Load widget from local build -->
+  <script src="./widget/dist/widget.js"></script>
+  
+  <script>
+    // Configure worker URL for local development
+    const workerUrl = 'http://localhost:8787';
+    
+    // Initialize popup mode widget
+    TypingMindChat.init({
+      instanceId: 'seo-assistant',
+      workerUrl: workerUrl,
+      onMessage: (msg) => {
+        console.log('Popup widget message:', msg);
+      },
+      onOpen: () => {
+        console.log('Popup widget opened');
+      },
+      onClose: () => {
+        console.log('Popup widget closed');
+      }
+    });
+    
+    // Initialize inline mode widget
+    setTimeout(() => {
+      TypingMindChat.init({
+        instanceId: 'support-bot',
+        container: document.getElementById('inline-container'),
+        embedMode: 'inline',
+        workerUrl: workerUrl,
+        onMessage: (msg) => {
+          console.log('Inline widget message:', msg);
+        }
+      });
+    }, 100);
+    
+    // Helper functions
+    function clearSessionStorage() {
+      sessionStorage.clear();
+      alert('Session storage cleared! Refresh the page to see welcome messages again.');
+    }
+    
+    function clearLocalStorage() {
+      localStorage.clear();
+      alert('Local storage cleared! All chat history removed.');
+    }
+    
+    function clearAllStorage() {
+      sessionStorage.clear();
+      localStorage.clear();
+      alert('All storage cleared! Refresh the page for a fresh start.');
+    }
+  </script>
+</body>
+</html>

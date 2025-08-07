@@ -245,6 +245,9 @@ class TypingMindChatWidget {
     this.chatWindow.show();
     this.inputArea.focus();
     
+    // Show welcome message if applicable
+    this.checkAndShowWelcomeMessage();
+    
     // Scroll to bottom after animation
     setTimeout(() => {
       this.messageList.scrollToBottom();
@@ -293,8 +296,9 @@ class TypingMindChatWidget {
     this.stateManager.addMessage(userMessage);
     this.messageList.addMessage(userMessage);
     
-    // Set loading state
+    // Set loading state and show typing indicator
     this.stateManager.setLoading(true);
+    this.messageList.showLoading();
     
     try {
       // Prepare messages for API
@@ -333,6 +337,7 @@ class TypingMindChatWidget {
       this.messageList.showError(error.message || 'Failed to send message. Please try again.');
     } finally {
       this.stateManager.setLoading(false);
+      this.messageList.hideLoading();
     }
   }
   
@@ -342,6 +347,9 @@ class TypingMindChatWidget {
       content: '',
       timestamp: new Date().toISOString()
     };
+    
+    // Hide loading indicator when streaming starts
+    this.messageList.hideLoading();
     
     // Add empty message
     this.stateManager.addMessage(assistantMessage);
@@ -375,6 +383,29 @@ class TypingMindChatWidget {
     const onMessage = this.configManager.get('onMessage');
     if (onMessage && message.role === 'assistant') {
       onMessage(message);
+    }
+  }
+  
+  checkAndShowWelcomeMessage() {
+    const agentInfo = this.stateManager.getState().agentInfo;
+    if (!agentInfo || !agentInfo.welcomeMessage) return;
+    
+    const { text, showOnNewSession, showOnReturn } = agentInfo.welcomeMessage;
+    const isNewSession = this.stateManager.isNewSession();
+    const hasBeenShown = this.stateManager.hasWelcomeBeenShown();
+    
+    // Show welcome message if:
+    // 1. New session and showOnNewSession is true
+    // 2. Returning session and showOnReturn is true
+    // 3. Haven't shown it yet in this session
+    if (!hasBeenShown && text) {
+      if ((isNewSession && showOnNewSession) || (!isNewSession && showOnReturn)) {
+        this.messageList.showWelcomeMessage(text);
+        this.stateManager.setWelcomeShown();
+        
+        // Don't save welcome message to localStorage
+        // It's just for display, not part of conversation history
+      }
     }
   }
   

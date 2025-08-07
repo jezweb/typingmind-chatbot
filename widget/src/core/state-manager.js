@@ -11,7 +11,8 @@ export class StateManager {
       isLoading: false,
       unreadCount: 0,
       agentInfo: null,
-      renderedMode: null
+      renderedMode: null,
+      hasShownWelcome: false
     };
     
     this.listeners = new Map();
@@ -144,14 +145,33 @@ export class StateManager {
     }
   }
   
+  // Welcome message management
+  setWelcomeShown() {
+    this.setState({ hasShownWelcome: true });
+    const key = `tm-welcome-shown-${this.instanceId}`;
+    sessionStorage.setItem(key, 'true');
+  }
+  
+  hasWelcomeBeenShown() {
+    const key = `tm-welcome-shown-${this.instanceId}`;
+    return this.state.hasShownWelcome || sessionStorage.getItem(key) === 'true';
+  }
+  
+  isNewSession() {
+    return this.state.messages.length === 0;
+  }
+  
   // Clear all state
   clearState() {
     this.setState({
       messages: [],
       unreadCount: 0,
-      isLoading: false
+      isLoading: false,
+      hasShownWelcome: false
     });
     const key = `tm-messages-${this.instanceId}`;
     localStorage.removeItem(key);
+    const welcomeKey = `tm-welcome-shown-${this.instanceId}`;
+    sessionStorage.removeItem(welcomeKey);
   }
 }
