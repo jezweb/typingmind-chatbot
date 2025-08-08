@@ -118,7 +118,7 @@ TypingMind API details:
 │   │   ├── components/    # UI components
 │   │   │   ├── chat-button.js      # Floating button
 │   │   │   ├── chat-window.js      # Window container
-│   │   │   ├── message-list.js     # Message display
+│   │   │   ├── message-list.js     # Message display with streaming
 │   │   │   └── input-area.js       # Input handling
 │   │   ├── utils/         # Utilities
 │   │   │   ├── dom-utils.js        # DOM helpers
@@ -128,7 +128,7 @@ TypingMind API details:
 │   │   ├── styles.css     # Widget styles
 │   │   └── icons.js       # SVG icons
 │   ├── dist/              # Built widget files
-│   │   └── widget.min.js  # Production bundle (~38KB)
+│   │   └── widget.min.js  # Production bundle (~40KB)
 │   ├── build.js           # Rollup build script
 │   ├── rollup.config.js   # Rollup configuration
 │   └── test-setup.js      # Jest test environment
@@ -220,6 +220,7 @@ instance_themes (
 - **Dual Embed Modes**: Popup (floating) or Inline (embedded)
 - **Session Management**: Persist conversations in localStorage
 - **Clean Architecture**: No backward compatibility code
+- **Streaming Simulation**: Progressive display of AI responses (v2.7.0)
 
 ### Widget Configuration
 ```javascript
@@ -240,7 +241,12 @@ TypingMindChat.init({
   // Callbacks:
   onMessage: (msg) => {},           // Message received callback
   onOpen: () => {},                 // Widget opened callback
-  onClose: () => {}                 // Widget closed callback
+  onClose: () => {},                // Widget closed callback
+  
+  // Streaming simulation options (v2.7.0):
+  enableStreaming: true,            // Enable/disable streaming display
+  streamingSpeed: 40,               // Milliseconds between chunks (10-200)
+  streamingMode: 'word'             // 'word' or 'character'
 });
 
 // Inline Mode (embedded in container)
@@ -461,6 +467,7 @@ The system includes comprehensive test pages served as static assets:
 - **Automated Tests**: https://typingmind-chatbot.webfonts.workers.dev/test/automated
 - **Production Embed Test**: https://typingmind-chatbot.webfonts.workers.dev/test/embed
 - **Height Configuration Test**: https://typingmind-chatbot.webfonts.workers.dev/test/height-test
+- **Streaming Simulation Test**: test-streaming-simulation.html (local only, not deployed)
 
 Test pages are automatically deployed with the worker as static assets in the `assets/test/` directory.
 
@@ -468,4 +475,4 @@ Test pages are automatically deployed with the worker as static assets in the `a
 
 See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
 
-Current version: **2.4.0** (Widget Testing & Modularization Complete - 283 tests with ~73% coverage, modular widget architecture, and successful production deployment)
+Current version: **2.7.0** (Client-Side Streaming Simulation - Progressive display of AI responses with configurable speed and modes)
